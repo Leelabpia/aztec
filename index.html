@@ -1,0 +1,2464 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0E1A26" />
+<meta name="description" content="사업장·층·자산을 도면 위에서 관리하는 자산관리 웹앱 (Google Drive 저장 지원)" />
+<title>자산관리 | 사업장 자산 등록부</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230E1A26'/%3E%3Cpath d='M8 24V10l8-5 8 5v14H8z' fill='none' stroke='%23B8862B' stroke-width='1.6'/%3E%3Cpath d='M12 24v-7h8v7M12 12h2M18 12h2M15 12h2' stroke='%23B8862B' stroke-width='1.4' fill='none'/%3E%3C/svg%3E" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
+<style>
+/* ============================================================
+   자산관리 — 사업장 자산 등록부
+   Design: blueprint ink + drafting paper + brass stamp
+   ============================================================ */
+*,*::before,*::after{box-sizing:border-box}
+:root{
+  --ink:#0E1A26; --ink-2:#16283A; --ink-3:#22394F; --ink-4:#2E4A62;
+  --paper:#EEF1F4; --sheet:#F7F9FA; --card:#FFFFFF;
+  --line:#CFD8E0; --line-soft:#E3E9EF; --line-strong:#A9B7C4;
+  --brass:#B8862B; --brass-soft:#F2E6CB; --brass-deep:#8C621B;
+  --teal:#12726B; --teal-soft:#E1F0EE;
+  --rust:#A8442E; --rust-soft:#F7E4DF;
+  --steel:#5B6E82; --muted:#78889A;
+  --text:#132130; --text-2:#3B4C5E;
+  --ok:#12726B; --warn:#B8862B; --danger:#A8442E;
+  --r:4px; --r-lg:8px;
+  --sh-1:0 1px 2px rgba(14,26,38,.06), 0 1px 1px rgba(14,26,38,.04);
+  --sh-2:0 4px 14px rgba(14,26,38,.10), 0 1px 3px rgba(14,26,38,.06);
+  --sh-3:0 18px 44px rgba(14,26,38,.22), 0 2px 8px rgba(14,26,38,.10);
+  --rail:236px;
+  --mono:ui-monospace,"SFMono-Regular","SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,sans-serif;
+}
+html,body{height:100%}
+body{
+  margin:0; font-family:var(--sans); color:var(--text); background:var(--paper);
+  font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+}
+h1,h2,h3,h4,p,figure{margin:0}
+button,input,select,textarea{font:inherit; color:inherit}
+button{cursor:pointer; background:none; border:none}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--brass); outline-offset:2px; border-radius:2px}
+.num{font-variant-numeric:tabular-nums; font-feature-settings:"tnum" 1}
+.mono{font-family:var(--mono); font-variant-numeric:tabular-nums}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+::selection{background:var(--brass-soft)}
+
+/* ---------- scrollbars ---------- */
+*::-webkit-scrollbar{width:10px;height:10px}
+*::-webkit-scrollbar-track{background:transparent}
+*::-webkit-scrollbar-thumb{background:#C2CDD7;border-radius:20px;border:3px solid transparent;background-clip:content-box}
+*::-webkit-scrollbar-thumb:hover{background:#9DAAB8;background-clip:content-box}
+
+/* ============================ APP SHELL ============================ */
+.app{display:grid;grid-template-columns:var(--rail) minmax(0,1fr);height:100dvh;overflow:hidden}
+
+/* ---------- rail ---------- */
+.rail{
+  background:var(--ink); color:#E7EDF3; display:flex; flex-direction:column;
+  border-right:1px solid #0A131C; position:relative; z-index:20; min-height:0;
+}
+.rail::after{
+  content:""; position:absolute; inset:0; pointer-events:none; opacity:.5;
+  background-image:linear-gradient(rgba(255,255,255,.028) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(255,255,255,.028) 1px,transparent 1px);
+  background-size:22px 22px;
+}
+.brand{display:flex;gap:10px;align-items:center;padding:18px 16px 16px;position:relative;z-index:1}
+.brand-mark{width:34px;height:34px;flex:none}
+.brand-txt strong{display:block;font-size:15px;letter-spacing:.02em;font-weight:700}
+.brand-txt span{display:block;font-size:9px;letter-spacing:.16em;color:#7E93A8;font-family:var(--mono);margin-top:2px}
+.nav{display:flex;flex-direction:column;gap:1px;padding:6px 8px;position:relative;z-index:1;overflow:auto;flex:1;min-height:0}
+.nav-label{font-family:var(--mono);font-size:9px;letter-spacing:.18em;color:#5D7186;padding:14px 10px 6px}
+.nav-item{
+  display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--r);
+  color:#B9C7D4;font-size:13.5px;font-weight:500;text-align:left;width:100%;
+  border-left:2px solid transparent; transition:background .14s,color .14s;
+}
+.nav-item svg{width:16px;height:16px;flex:none;opacity:.85}
+.nav-item:hover{background:rgba(255,255,255,.055);color:#F0F5F9}
+.nav-item.on{background:rgba(184,134,43,.14);color:#F4E4C2;border-left-color:var(--brass)}
+.nav-item.on svg{opacity:1;color:var(--brass)}
+.nav-item .badge{margin-left:auto;font-family:var(--mono);font-size:10px;color:#7E93A8}
+.rail-foot{padding:10px 10px 12px;position:relative;z-index:1;border-top:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;gap:8px}
+.drive-pill{
+  display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--r);
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);
+  font-size:11.5px;color:#B9C7D4;width:100%;text-align:left;
+}
+.drive-pill:hover{background:rgba(255,255,255,.09)}
+.dot{width:8px;height:8px;border-radius:50%;flex:none;background:#6B7E91;box-shadow:0 0 0 3px rgba(255,255,255,.06)}
+.dot.ok{background:#37B79E}.dot.warn{background:var(--brass)}.dot.err{background:#E4694C}
+.drive-pill .dp-txt{overflow:hidden}
+.drive-pill .dp-txt b{display:block;font-weight:600;font-size:11.5px;color:#DCE6EF}
+.drive-pill .dp-txt i{display:block;font-style:normal;font-size:10px;color:#7E93A8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px}
+.admin-btn{
+  display:flex;align-items:center;justify-content:center;gap:8px;padding:9px;border-radius:var(--r);
+  background:var(--brass);color:#20170A;font-weight:700;font-size:12.5px;letter-spacing:.01em;
+  border:1px solid #D6A648;
+}
+.admin-btn:hover{background:#C9962F}
+.admin-btn.on{background:rgba(184,134,43,.16);color:#F4E4C2;border-color:rgba(184,134,43,.5)}
+.admin-btn svg{width:15px;height:15px}
+
+/* ---------- main ---------- */
+.main{display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden}
+.topbar{
+  display:flex;align-items:center;gap:12px;padding:10px 18px;background:var(--sheet);
+  border-bottom:1px solid var(--line);flex:none;min-height:52px;flex-wrap:wrap;
+}
+.crumb{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);min-width:0}
+.crumb b{color:var(--text);font-size:13.5px;font-weight:700;letter-spacing:.01em}
+.crumb .sep{color:var(--line-strong)}
+.top-actions{margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.view{flex:1;min-height:0;overflow:auto;padding:0 0 60px;scroll-behavior:smooth}
+.wrap{padding:18px;max-width:1680px}
+@media(min-width:1500px){.wrap{padding:22px 26px}}
+
+/* ============================ TITLE BLOCK (signature) ============================ */
+.sheetbar{
+  display:flex;flex-wrap:wrap;background:var(--card);border-bottom:1px solid var(--line);
+  border-top:1px solid var(--line);position:relative;
+}
+.sheetbar::before{content:"";position:absolute;left:0;right:0;top:-1px;height:3px;background:linear-gradient(90deg,var(--brass) 0 90px,var(--line) 90px 100%)}
+.sb{padding:11px 16px;border-right:1px solid var(--line-soft);min-width:0;display:flex;flex-direction:column;justify-content:center}
+.sb.grow{flex:1 1 260px}
+.sb-k{font-family:var(--mono);font-size:9px;letter-spacing:.17em;color:var(--muted);text-transform:uppercase}
+.sb-v{font-size:13.5px;font-weight:600;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-v small{font-weight:400;color:var(--muted);font-size:11.5px}
+
+/* ============================ GENERIC UI ============================ */
+.h-sec{display:flex;align-items:flex-end;gap:12px;margin:26px 0 12px}
+.h-sec:first-child{margin-top:0}
+.h-sec h2{font-size:15px;font-weight:700;letter-spacing:.01em}
+.h-sec h2 em{font-style:normal;font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase}
+.h-sec .sp{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--sh-1)}
+.card-h{display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid var(--line-soft)}
+.card-h h3{font-size:13px;font-weight:700}
+.card-h .sp{margin-left:auto;display:flex;gap:6px;align-items:center;font-size:11.5px;color:var(--muted)}
+.card-b{padding:16px}
+.card-b.tight{padding:0}
+
+.btn{
+  display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:var(--r);
+  border:1px solid var(--line-strong);background:var(--card);color:var(--text-2);
+  font-size:12.5px;font-weight:600;white-space:nowrap;transition:.13s;
+}
+.btn:hover{background:#F1F5F8;color:var(--text);border-color:#8FA0AF}
+.btn svg{width:14px;height:14px}
+.btn.primary{background:var(--ink-2);border-color:var(--ink-2);color:#F2F6FA}
+.btn.primary:hover{background:var(--ink-3)}
+.btn.brass{background:var(--brass);border-color:var(--brass-deep);color:#20170A}
+.btn.brass:hover{background:#C9962F}
+.btn.danger{color:var(--danger);border-color:#DFB6AB}
+.btn.danger:hover{background:var(--rust-soft);border-color:var(--danger)}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn.ghost:hover{background:#EEF2F6}
+.btn.sm{padding:5px 9px;font-size:11.5px}
+.btn.xs{padding:3px 7px;font-size:11px;border-radius:3px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.ico{padding:7px;border-radius:var(--r)}
+.btn.ico svg{width:15px;height:15px}
+
+.field{display:flex;flex-direction:column;gap:5px}
+.field > label{font-size:11.5px;font-weight:600;color:var(--text-2);display:flex;gap:5px;align-items:center}
+.field > label .req{color:var(--brass)}
+.field .hint{font-size:10.5px;color:var(--muted);line-height:1.4}
+.inp{
+  width:100%;padding:8px 10px;border:1px solid var(--line-strong);border-radius:var(--r);
+  background:var(--card);font-size:13px;transition:.13s;min-width:0;
+}
+.inp:hover{border-color:#93A3B2}
+.inp:focus{outline:none;border-color:var(--ink-3);box-shadow:0 0 0 3px rgba(34,57,79,.12)}
+select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%235B6E82' stroke-width='1.4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:26px}
+textarea.inp{resize:vertical;min-height:66px;line-height:1.55}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media(max-width:900px){.grid3,.grid4{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.grid2,.grid3,.grid4{grid-template-columns:1fr}}
+
+.pill{display:inline-flex;align-items:center;gap:5px;padding:2.5px 8px;border-radius:100px;font-size:10.5px;font-weight:600;border:1px solid transparent;white-space:nowrap}
+.pill.grey{background:#EDF1F5;color:#4C5E71;border-color:#DCE3EA}
+.pill.teal{background:var(--teal-soft);color:#0C5B55;border-color:#BFDFDA}
+.pill.brass{background:var(--brass-soft);color:var(--brass-deep);border-color:#E5D2A8}
+.pill.rust{background:var(--rust-soft);color:#8A3521;border-color:#EBC9C0}
+.chip-dot{width:7px;height:7px;border-radius:2px;flex:none;display:inline-block}
+
+.empty{padding:44px 24px;text-align:center;color:var(--muted)}
+.empty svg{width:38px;height:38px;opacity:.4;margin-bottom:12px}
+.empty h3{font-size:14px;color:var(--text-2);margin-bottom:6px;font-weight:700}
+.empty p{font-size:12.5px;max-width:420px;margin:0 auto 14px;line-height:1.6}
+
+/* ---------- KPI ---------- */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media(max-width:1080px){.kpis{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){.kpis{grid-template-columns:1fr}}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);padding:15px 16px 13px;position:relative;overflow:hidden;box-shadow:var(--sh-1)}
+.kpi::after{content:"";position:absolute;inset:0 auto 0 0;width:3px;background:var(--line-strong)}
+.kpi.k1::after{background:var(--ink-3)}.kpi.k2::after{background:var(--steel)}
+.kpi.k3::after{background:var(--rust)}.kpi.k4::after{background:var(--teal)}
+.kpi .kk{font-family:var(--mono);font-size:9.5px;letter-spacing:.15em;color:var(--muted);text-transform:uppercase}
+.kpi .kv{font-size:25px;font-weight:700;letter-spacing:-.02em;margin-top:7px;line-height:1.1;font-variant-numeric:tabular-nums}
+.kpi .kv u{text-decoration:none;font-size:13px;font-weight:600;color:var(--muted);margin-left:4px}
+.kpi .ks{font-size:11px;color:var(--muted);margin-top:7px;display:flex;gap:8px;align-items:center}
+.kpi .ks b{color:var(--text-2);font-weight:600}
+.spark{display:flex;gap:3px;align-items:flex-end;height:16px}
+.spark i{width:4px;background:var(--line-strong);border-radius:1px;display:block}
+.spark i:last-child{background:var(--brass)}
+
+/* ---------- tables ---------- */
+.tbl-wrap{overflow:auto;max-width:100%}
+table.tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+table.tbl th{
+  text-align:left;padding:9px 12px;background:#F3F6F8;border-bottom:1px solid var(--line);
+  font-size:10.5px;font-weight:700;color:#5A6C7E;letter-spacing:.04em;white-space:nowrap;position:sticky;top:0;z-index:2;
+}
+table.tbl th.r,table.tbl td.r{text-align:right}
+table.tbl th.c,table.tbl td.c{text-align:center}
+table.tbl td{padding:9px 12px;border-bottom:1px solid var(--line-soft);vertical-align:middle}
+table.tbl tbody tr:hover{background:#F8FAFC}
+table.tbl tbody tr.sel{background:#FBF5E7}
+table.tbl tr.tot td{background:#F3F6F8;font-weight:700;border-top:1px solid var(--line);position:sticky;bottom:0}
+table.tbl td.strong{font-weight:600}
+table.tbl .sub{display:block;font-size:10.5px;color:var(--muted);margin-top:1px}
+.sortable{cursor:pointer;user-select:none}
+.sortable:hover{color:var(--ink-2)}
+.linkish{color:var(--ink-2);font-weight:600;border-bottom:1px solid var(--line-strong);text-align:left}
+.linkish:hover{color:var(--brass-deep);border-color:var(--brass)}
+.mono-cell{font-family:var(--mono);font-size:11.5px;font-variant-numeric:tabular-nums}
+tr.grp td{background:#EDF1F5;font-weight:700;font-size:12px;color:var(--ink-2);border-bottom:1px solid var(--line)}
+
+/* ---------- charts ---------- */
+.bars{display:flex;flex-direction:column;gap:11px}
+.bar-row{display:grid;grid-template-columns:132px 1fr 118px;gap:12px;align-items:center;font-size:12.5px}
+@media(max-width:640px){.bar-row{grid-template-columns:96px 1fr;gap:8px}.bar-row .bv{grid-column:2;text-align:right;margin-top:-4px}}
+.bar-row .bl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;color:var(--text-2)}
+.bar-row .bt{display:block;height:22px;background:#EDF1F5;border-radius:3px;overflow:hidden;position:relative}
+.bar-row .bf{display:block;height:100%;background:linear-gradient(90deg,var(--ink-3),#3D6285);border-radius:3px;min-width:2px;transition:width .5s cubic-bezier(.2,.8,.2,1)}
+.bar-row:nth-child(2n) .bf{background:linear-gradient(90deg,#43627F,#6C8CA9)}
+.bar-row .bv{text-align:right;font-variant-numeric:tabular-nums;font-weight:600;color:var(--text-2);white-space:nowrap}
+.donut-wrap{display:flex;gap:18px;align-items:center;flex-wrap:wrap;justify-content:center}
+.donut{position:relative;flex:none}
+.donut .dcenter{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+.donut .dcenter b{font-size:20px;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.donut .dcenter span{font-size:10px;color:var(--muted);letter-spacing:.1em;font-family:var(--mono)}
+.legend{display:flex;flex-direction:column;gap:7px;min-width:170px}
+.legend-row{display:flex;align-items:center;gap:8px;font-size:12px}
+.legend-row .lg-n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.legend-row .lg-v{font-variant-numeric:tabular-nums;color:var(--muted);font-size:11.5px}
+
+/* ---------- floor plan sheet ---------- */
+.fp-layout{display:grid;grid-template-columns:250px minmax(0,1fr);gap:14px;align-items:start}
+@media(max-width:1080px){.fp-layout{grid-template-columns:1fr}}
+.tree{display:flex;flex-direction:column;gap:2px;font-size:12.5px}
+.tree-site{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--r);font-weight:700;color:var(--text-2);width:100%;text-align:left}
+.tree-site:hover{background:#F1F5F8}
+.tree-site .cnt{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--muted)}
+.tree-bld{padding:5px 10px 5px 22px;font-size:11.5px;color:var(--muted);font-weight:600}
+.tree-floor{display:flex;align-items:center;gap:8px;padding:6px 10px 6px 30px;border-radius:var(--r);width:100%;text-align:left;color:var(--text-2)}
+.tree-floor:hover{background:#F1F5F8}
+.tree-floor.on{background:var(--brass-soft);color:var(--brass-deep);font-weight:700}
+.tree-floor .cnt{margin-left:auto;font-family:var(--mono);font-size:10px}
+
+.sheet{background:var(--card);border:1px solid var(--line-strong);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--sh-2)}
+.sheet-bar{display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--ink);color:#DCE6EF;font-size:12px}
+.sheet-bar .sb-title{font-weight:700;letter-spacing:.02em}
+.sheet-bar .sb-meta{font-family:var(--mono);font-size:10px;color:#8698AB;letter-spacing:.08em}
+.sheet-bar .sp{margin-left:auto;display:flex;gap:6px;align-items:center}
+.sheet-bar .zbtn{color:#C6D2DE;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.05);padding:4px 8px;border-radius:3px;font-size:11px;font-weight:600}
+.sheet-bar .zbtn:hover{background:rgba(255,255,255,.13)}
+.fp-scroll{overflow:auto;background:#F1F4F7;max-height:min(66vh,760px);position:relative}
+.fp-stage{position:relative;margin:0 auto;transform-origin:0 0;transition:width .18s ease}
+.fp-canvas{position:relative;width:100%;background:
+  linear-gradient(rgba(34,57,79,.075) 1px,transparent 1px) 0 0/100% 26px,
+  linear-gradient(90deg,rgba(34,57,79,.075) 1px,transparent 1px) 0 0/26px 100%,
+  linear-gradient(rgba(34,57,79,.04) 1px,transparent 1px) 0 0/100% 130px,
+  linear-gradient(90deg,rgba(34,57,79,.04) 1px,transparent 1px) 0 0/130px 100%,
+  #FCFDFE;
+  border:1px solid var(--line);
+}
+.fp-canvas img{display:block;width:100%;height:auto;user-select:none;-webkit-user-drag:none;pointer-events:none}
+.fp-canvas.placing{cursor:crosshair;box-shadow:inset 0 0 0 2px var(--brass)}
+.fp-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:70px 20px;color:var(--muted);text-align:center}
+.fp-empty svg{width:44px;height:44px;opacity:.35}
+.mk{
+  position:absolute;transform:translate(-50%,-100%);z-index:3;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;filter:drop-shadow(0 2px 3px rgba(14,26,38,.35));
+  animation:drop .34s cubic-bezier(.2,1.2,.4,1) both;
+}
+@keyframes drop{from{opacity:0;transform:translate(-50%,-190%) scale(.8)}to{opacity:1;transform:translate(-50%,-100%) scale(1)}}
+.mk .pin{
+  width:24px;height:24px;border-radius:50% 50% 50% 4px;transform:rotate(-45deg);
+  background:var(--brass);border:2px solid #FDFBF6;display:flex;align-items:center;justify-content:center;
+}
+.mk .pin b{transform:rotate(45deg);font-size:9.5px;font-weight:800;color:#20170A;font-family:var(--mono)}
+.mk.sel{z-index:6}
+.mk.sel .pin{background:var(--rust);border-color:#FFF}
+.mk.sel .pin b{color:#FFF}
+.mk:hover{z-index:7}
+.mk .lbl{
+  position:absolute;bottom:30px;left:50%;transform:translateX(-50%);
+  background:var(--ink);color:#F0F5F9;font-size:10.5px;padding:4px 8px;border-radius:3px;
+  white-space:nowrap;opacity:0;pointer-events:none;transition:.13s;max-width:220px;overflow:hidden;text-overflow:ellipsis;
+}
+.mk .lbl b{color:var(--brass);margin-left:6px;font-family:var(--mono)}
+.mk:hover .lbl,.mk.sel .lbl{opacity:1}
+.mk.dragging{animation:none;opacity:.75;z-index:9}
+.fp-hint{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--brass-soft);border-top:1px solid #E5D2A8;font-size:11.5px;color:var(--brass-deep);font-weight:600}
+.detail{position:sticky;top:14px}
+.dt-photo{width:100%;aspect-ratio:4/3;background:#EDF1F5;border-bottom:1px solid var(--line-soft);display:block;object-fit:cover}
+.dt-photo-ph{width:100%;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;color:#B6C1CC;background:#EDF1F5;border-bottom:1px solid var(--line-soft)}
+.dt-photo-ph svg{width:34px;height:34px}
+.dl{display:grid;grid-template-columns:92px 1fr;gap:0;font-size:12.5px}
+.dl dt{padding:7px 12px;color:var(--muted);font-size:11.5px;border-bottom:1px solid var(--line-soft);background:#FAFCFD}
+.dl dd{padding:7px 12px;border-bottom:1px solid var(--line-soft);font-variant-numeric:tabular-nums;word-break:break-word}
+.dl dd.money{font-weight:600}
+
+/* ---------- admin ---------- */
+.admin-banner{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--ink);color:#E7EDF3;border-radius:var(--r-lg);font-size:12.5px;margin-bottom:16px}
+.admin-banner svg{width:16px;height:16px;color:var(--brass)}
+.admin-banner b{color:var(--brass)}
+.stamp{
+  font-family:var(--mono);font-size:10px;letter-spacing:.14em;font-weight:700;
+  border:1.5px solid var(--rust);color:var(--rust);padding:2px 7px;border-radius:2px;
+  transform:rotate(-3deg);text-transform:uppercase;
+}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:16px;overflow:auto}
+.tab{padding:9px 14px;font-size:12.5px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;white-space:nowrap}
+.tab:hover{color:var(--text)}
+.tab.on{color:var(--ink-2);border-bottom-color:var(--brass)}
+.tab .n{margin-left:6px;font-family:var(--mono);font-size:10px;color:var(--muted)}
+.list-row{display:flex;align-items:center;gap:12px;padding:11px 14px;border-bottom:1px solid var(--line-soft)}
+.list-row:hover{background:#F8FAFC}
+.list-row:last-child{border-bottom:none}
+.list-row .lr-main{flex:1;min-width:0}
+.list-row .lr-t{font-size:13px;font-weight:600;display:flex;align-items:center;gap:7px}
+.list-row .lr-s{font-size:11.5px;color:var(--muted);margin-top:2px;display:flex;gap:10px;flex-wrap:wrap}
+.list-row .lr-a{display:flex;gap:6px;flex:none}
+.thumb{width:38px;height:38px;border-radius:4px;object-fit:cover;background:#EDF1F5;flex:none;border:1px solid var(--line-soft)}
+.thumb-ph{width:38px;height:38px;border-radius:4px;background:#EDF1F5;border:1px solid var(--line-soft);display:flex;align-items:center;justify-content:center;color:#B6C1CC;flex:none}
+.thumb-ph svg{width:16px;height:16px}
+
+/* ---------- photo input ---------- */
+.photo-drop{
+  border:1.5px dashed var(--line-strong);border-radius:var(--r-lg);background:#FAFCFD;
+  padding:14px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;
+}
+.photo-drop.over{border-color:var(--brass);background:var(--brass-soft)}
+.photo-prev{width:112px;height:84px;border-radius:var(--r);overflow:hidden;background:#EDF1F5;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid var(--line-soft);color:#B6C1CC}
+.photo-prev img{width:100%;height:100%;object-fit:cover;display:block}
+.photo-acts{display:flex;flex-direction:column;gap:7px;flex:1;min-width:180px}
+.photo-acts .row{display:flex;gap:7px;flex-wrap:wrap}
+
+/* ---------- modal / toast ---------- */
+.mask{position:fixed;inset:0;background:rgba(10,19,28,.52);backdrop-filter:blur(2px);z-index:100;display:flex;align-items:flex-start;justify-content:center;padding:24px 16px;overflow:auto;animation:fade .16s both}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.modal{background:var(--card);border-radius:var(--r-lg);box-shadow:var(--sh-3);width:min(720px,100%);margin:auto;animation:pop .2s cubic-bezier(.2,1.1,.4,1) both;border:1px solid var(--line)}
+@keyframes pop{from{opacity:0;transform:translateY(10px) scale(.99)}to{opacity:1;transform:none}}
+.modal.wide{width:min(980px,100%)}
+.modal.narrow{width:min(460px,100%)}
+.modal-h{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line)}
+.modal-h h3{font-size:14.5px;font-weight:700}
+.modal-h .sub{font-size:11.5px;color:var(--muted);font-family:var(--mono);letter-spacing:.06em}
+.modal-h .x{margin-left:auto;color:var(--muted);padding:4px;border-radius:3px}
+.modal-h .x:hover{background:#EEF2F6;color:var(--text)}
+.modal-b{padding:18px;display:flex;flex-direction:column;gap:14px}
+.modal-f{display:flex;gap:8px;padding:13px 18px;border-top:1px solid var(--line);background:#FAFCFD;flex-wrap:wrap}
+.modal-f .sp{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.fset{border:1px solid var(--line-soft);border-radius:var(--r-lg);padding:14px}
+.fset > legend{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;color:var(--muted);text-transform:uppercase;padding:0 6px}
+.toasts{position:fixed;right:18px;bottom:18px;z-index:200;display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:none}
+.toast{
+  background:var(--ink);color:#EAF0F6;padding:10px 14px;border-radius:var(--r);
+  box-shadow:var(--sh-3);font-size:12.5px;display:flex;gap:9px;align-items:flex-start;max-width:380px;
+  animation:tin .22s cubic-bezier(.2,1.1,.4,1) both;border-left:3px solid var(--brass);pointer-events:auto;
+}
+@keyframes tin{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:none}}
+.toast.ok{border-left-color:#37B79E}.toast.err{border-left-color:#E4694C}
+.toast svg{width:15px;height:15px;flex:none;margin-top:1px;color:var(--brass)}
+.toast.ok svg{color:#37B79E}.toast.err svg{color:#E4694C}
+.toast b{display:block;font-weight:700;margin-bottom:1px}
+.toast span{color:#B9C7D4;line-height:1.45}
+
+/* ---------- misc ---------- */
+.kv-mini{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.kv-mini b{color:var(--text);font-variant-numeric:tabular-nums}
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.filters .inp{width:auto;min-width:120px}
+.filters .grow{flex:1;min-width:180px}
+.loading{display:flex;align-items:center;justify-content:center;gap:8px;padding:40px;color:var(--muted);font-size:12.5px}
+.spin{width:14px;height:14px;border:2px solid var(--line-strong);border-top-color:var(--brass);border-radius:50%;animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;transition-duration:.001ms!important}}
+@media print{
+  .rail,.topbar,.no-print{display:none!important}
+  .app{display:block;height:auto}
+  .view{overflow:visible}
+  .card{break-inside:avoid;box-shadow:none}
+}
+</style>
+<style id="app-extra">
+.fp-main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:14px;align-items:start}
+.fp-side{position:sticky;top:14px;max-height:calc(100vh - 130px);overflow:auto;padding-bottom:4px}
+@media(max-width:1240px){.fp-main{grid-template-columns:1fr}.fp-side{position:static;max-height:none}}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- ============ RAIL ============ -->
+  <aside class="rail no-print">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+        <rect x=".8" y=".8" width="38.4" height="38.4" rx="7" fill="#16283A" stroke="#B8862B" stroke-width="1.2"/>
+        <path d="M10 31V15l10-6.5L30 15v16H10z" stroke="#B8862B" stroke-width="1.5" fill="none"/>
+        <path d="M15 31v-9h10v9" stroke="#B8862B" stroke-width="1.3" fill="none"/>
+        <path d="M15 15.5h3M22 15.5h3M18.5 18.5h3" stroke="#B8862B" stroke-width="1.2" stroke-linecap="round"/>
+        <path d="M6 35h28" stroke="#B8862B" stroke-width="1.1" stroke-linecap="round" opacity=".6"/>
+      </svg>
+      <div class="brand-txt">
+        <strong>자산관리</strong>
+        <span>FIXED ASSET REGISTER</span>
+      </div>
+    </div>
+
+    <nav class="nav" id="nav">
+      <div class="nav-label">REGISTER</div>
+      <button class="nav-item" data-route="dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7.5" height="8.5" rx="1.2"/><rect x="13.5" y="3" width="7.5" height="5" rx="1.2"/><rect x="3" y="15" width="7.5" height="6" rx="1.2"/><rect x="13.5" y="11.5" width="7.5" height="9.5" rx="1.2"/></svg>
+        <span>대시보드</span>
+      </button>
+      <button class="nav-item" data-route="floorplan">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="1.6"/><path d="M3 10h7v11M10 10h11M14 10v5h7"/></svg>
+        <span>도면 배치</span>
+      </button>
+      <button class="nav-item" data-route="assets">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5 12 12l8-4.5M12 12v9"/></svg>
+        <span>자산 목록</span>
+        <span class="badge" id="navAssetCount">0</span>
+      </button>
+      <div class="nav-label">MANAGE</div>
+      <button class="nav-item" data-route="admin">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 4.5 6.8v6.1c0 4.3 3.1 7.2 7.5 8.6 4.4-1.4 7.5-4.3 7.5-8.6V6.8L12 3.5z"/><path d="m9.2 12.2 1.9 1.9 3.7-4"/></svg>
+        <span>관리자 모드</span>
+        <span class="badge" id="navAdminState">OFF</span>
+      </button>
+      <div class="nav-label">DATA</div>
+      <button class="nav-item" data-route="data">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="6" rx="7.5" ry="3"/><path d="M4.5 6v12c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3V6"/><path d="M4.5 12c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3"/></svg>
+        <span>데이터 · 백업</span>
+      </button>
+    </nav>
+
+    <div class="rail-foot">
+      <button class="drive-pill" id="drivePill" title="Google Drive 연결 상태">
+        <span class="dot" id="driveDot"></span>
+        <span class="dp-txt"><b id="driveName">로컬 저장 중</b><i id="driveInfo">드라이브 연결하기</i></span>
+      </button>
+      <button class="admin-btn" id="adminFab">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10.5" width="16" height="10" rx="2"/><path d="M8 10.5V7.6A4 4 0 0 1 12 3.6a4 4 0 0 1 4 4v2.9"/></svg>
+        <span id="adminFabText">관리자 모드 켜기</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <main class="main">
+    <header class="topbar no-print">
+      <div class="crumb" id="crumb"></div>
+      <div class="top-actions">
+        <label class="sr" for="siteFilter">사업장 필터</label>
+        <select class="inp" id="siteFilter" style="min-width:170px"><option value="">전체 사업장</option></select>
+        <button class="btn ico" id="btnSync" title="Google Drive에 저장">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16.5V4.5M12 4.5 7.8 8.7M12 4.5l4.2 4.2"/><path d="M4.5 15v3.4a1.6 1.6 0 0 0 1.6 1.6h11.8a1.6 1.6 0 0 0 1.6-1.6V15"/></svg>
+        </button>
+        <button class="btn primary" id="btnAddAsset">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          자산 등록
+        </button>
+      </div>
+    </header>
+    <section class="view" id="view"></section>
+  </main>
+</div>
+
+<div id="modalRoot"></div>
+<div class="toasts" id="toastRoot" aria-live="polite"></div>
+
+<script>
+/* ============================================================================
+   자산관리 웹앱  —  사업장 자산 등록부
+   Single-file static app. GitHub Pages 배포용 / Google Drive 저장 지원.
+   ========================================================================== */
+/* ==========================================================================
+   PART 2 — 유틸 · 상태 · 저장소 · 샘플데이터 · Google Drive
+   ========================================================================== */
+
+/* ---- 배포 전 여기에 본인의 OAuth 클라이언트 ID를 넣으면 앱 설정 화면 없이도 동작합니다.
+        (앱 → 데이터·백업 → Google Drive 연결 에서도 입력/저장할 수 있습니다) */
+const DEFAULT_CLIENT_ID = "";
+
+const LS = { data:"am.data.v1", settings:"am.settings.v1", pin:"am.pin.v1" };
+const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.file";
+const DATA_FILENAME = "asset-manager-data.json";
+const APP_VERSION = "1.0.0";
+
+/* ------------------------------ 기본 유틸 ------------------------------ */
+const $  = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+const uid = (p) => (p || "id") + "_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const esc = (v) => String(v == null ? "" : v).replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const num = (v) => { const n = Number(String(v == null ? "" : v).replace(/[,\s원]/g, "")); return isFinite(n) ? n : 0; };
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const todayISO = () => new Date().toISOString().slice(0, 10);
+const nowISO = () => new Date().toISOString();
+const debounce = (fn, ms) => { let t; return function () { clearTimeout(t); const a = arguments, c = this; t = setTimeout(() => fn.apply(c, a), ms); }; };
+
+function fmtNum(n) { return (Math.round(num(n) * 100) / 100).toLocaleString("ko-KR"); }
+function fmtWon(n) { return fmtNum(n) + "원"; }
+function fmtShort(n) {                       /* 금액 축약: 억 / 만 */
+  n = num(n); const a = Math.abs(n);
+  if (a >= 100000000) return (n / 100000000).toFixed(a >= 1000000000 ? 0 : 1).replace(/\.0$/, "") + "억";
+  if (a >= 10000)     return (n / 10000).toFixed(a >= 1000000 ? 0 : 1).replace(/\.0$/, "") + "만";
+  return fmtNum(n);
+}
+function fmtDate(iso) {
+  if (!iso) return "—";
+  const d = new Date(iso); if (isNaN(d)) return "—";
+  const p = (x) => String(x).padStart(2, "0");
+  return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate());
+}
+function fmtDateTime(iso) {
+  if (!iso) return "—";
+  const d = new Date(iso); if (isNaN(d)) return "—";
+  const p = (x) => String(x).padStart(2, "0");
+  return fmtDate(iso) + " " + p(d.getHours()) + ":" + p(d.getMinutes());
+}
+function relTime(iso) {
+  if (!iso) return "—";
+  const s = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (!isFinite(s)) return "—";
+  if (s < 60) return "방금 전";
+  if (s < 3600) return Math.floor(s / 60) + "분 전";
+  if (s < 86400) return Math.floor(s / 3600) + "시간 전";
+  if (s < 2592000) return Math.floor(s / 86400) + "일 전";
+  return fmtDate(iso);
+}
+function download(filename, text, mime) {
+  const blob = new Blob([text], { type: mime || "application/json;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename; document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 400);
+}
+function readFileText(file) {
+  return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(r.error); r.readAsText(file, "utf-8"); });
+}
+function readFileDataURL(file) {
+  return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(r.error); r.readAsDataURL(file); });
+}
+/* 사진 압축: 긴 변 maxDim, JPEG 품질 q  → dataURL (앱에 저장되는 미리보기용 썸네일) */
+async function compressImage(file, maxDim, q) {
+  maxDim = maxDim || 1280; q = q || 0.72;
+  const raw = await readFileDataURL(file);
+  const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error("이미지를 읽을 수 없습니다.")); i.src = raw; });
+  let w = img.naturalWidth, h = img.naturalHeight;
+  const sc = Math.min(1, maxDim / Math.max(w, h));
+  w = Math.max(1, Math.round(w * sc)); h = Math.max(1, Math.round(h * sc));
+  const c = document.createElement("canvas"); c.width = w; c.height = h;
+  const ctx = c.getContext("2d");
+  ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, w, h);
+  ctx.drawImage(img, 0, 0, w, h);
+  return { dataUrl: c.toDataURL("image/jpeg", q), raw: raw, w: img.naturalWidth, h: img.naturalHeight };
+}
+async function compressDataURL(dataUrl, maxDim, q) {
+  maxDim = maxDim || 1600; q = q || 0.82;
+  const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error("이미지 로드 실패")); i.src = dataUrl; });
+  const sc = Math.min(1, maxDim / Math.max(img.naturalWidth, img.naturalHeight));
+  const w = Math.max(1, Math.round(img.naturalWidth * sc)), h = Math.max(1, Math.round(img.naturalHeight * sc));
+  const c = document.createElement("canvas"); c.width = w; c.height = h;
+  const ctx = c.getContext("2d"); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, w, h); ctx.drawImage(img, 0, 0, w, h);
+  return c.toDataURL("image/jpeg", q);
+}
+function dataURLtoBlob(dataUrl) {
+  const parts = dataUrl.split(",");
+  const mime = (parts[0].match(/:(.*?);/) || [, "image/jpeg"])[1];
+  const bin = atob(parts[1]); const len = bin.length;
+  const u8 = new Uint8Array(len);
+  for (let i = 0; i < len; i++) u8[i] = bin.charCodeAt(i);
+  return new Blob([u8], { type: mime });
+}
+function svgToDataURL(svg) { return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg); }
+function typeColor(t) { return (t && t.color) || "#B8862B"; }
+
+/* ------------------------------ 상태 ------------------------------ */
+const S = {
+  route: "dashboard",
+  data: null,
+  admin: false,
+  filters: { site: "", building: "", floor: "", type: "", q: "", status: "" },
+  fp: { siteId: null, buildingId: null, floorId: null, zoom: 1, placing: null, sel: null },
+  adminTab: "sites",
+  sort: { key: "book", dir: -1 },
+  drive: { token: null, exp: 0, client: null, ready: false, busy: false, lastError: "" },
+  pin: "0000"
+};
+
+/* ------------------------------ 데이터 모델 ------------------------------ */
+function emptyData() {
+  return {
+    version: 1,
+    createdAt: nowISO(),
+    updatedAt: nowISO(),
+    settings: {
+      company: "", currency: "KRW",
+      driveFolderName: "자산관리",
+      driveFolderId: "", driveFileId: "",
+      clientId: "", autoSync: true, uploadOriginals: true,
+      lastDriveSave: "", lastDriveLoad: ""
+    },
+    assetTypes: [
+      { id: "t_furn", name: "비품",       color: "#B8862B", note: "사무 비품·집기" },
+      { id: "t_it",   name: "IT장비",     color: "#12726B", note: "PC·서버·네트워크" },
+      { id: "t_mach", name: "기계설비",   color: "#2E4A62", note: "생산·공조 설비" },
+      { id: "t_veh",  name: "차량·운반",  color: "#A8442E", note: "차량 및 운반구" },
+      { id: "t_etc",  name: "기타",       color: "#78889A", note: "" }
+    ],
+    sites: [],
+    assets: []
+  };
+}
+
+/* --- 금액 규칙 -----------------------------------------------------------
+   취득원가 = 구입금액 (미입력 시 제품가격 × 수량)
+   장부가액 = 취득원가 − 감가상각누계액
+------------------------------------------------------------------------ */
+function assetQty(a) { const q = num(a.quantity); return q > 0 ? q : 1; }
+function assetCost(a) { const p = num(a.purchaseAmount); return p > 0 ? p : num(a.price) * assetQty(a); }
+function assetBook(a) { return assetCost(a) - num(a.depreciationAmount); }
+function assetTypeName(id) { const t = (S.data.assetTypes || []).find((x) => x.id === id); return t ? t.name : "미분류"; }
+function assetType(id) { return (S.data.assetTypes || []).find((x) => x.id === id) || null; }
+
+function findSite(id)   { return (S.data.sites || []).find((s) => s.id === id) || null; }
+function findBuilding(siteId, id) { const s = findSite(siteId); return s ? (s.buildings || []).find((b) => b.id === id) || null : null; }
+function findFloor(siteId, buildingId, id) { const b = findBuilding(siteId, buildingId); return b ? (b.floors || []).find((f) => f.id === id) || null : null; }
+function allFloors() {
+  const out = [];
+  (S.data.sites || []).forEach((s) => (s.buildings || []).forEach((b) => (b.floors || []).forEach((f) => out.push({ site: s, building: b, floor: f }))));
+  return out;
+}
+function floorRef(floorId) { return allFloors().find((x) => x.floor.id === floorId) || null; }
+function assetsOf(pred) { return (S.data.assets || []).filter(pred || (() => true)); }
+function assetsInFloor(floorId) { return assetsOf((a) => a.floorId === floorId); }
+
+function summarize(list) {
+  let qty = 0, cost = 0, dep = 0, book = 0;
+  list.forEach((a) => { const q = assetQty(a); qty += q; cost += assetCost(a); dep += num(a.depreciationAmount); book += assetBook(a); });
+  return { count: list.length, qty, cost, dep, book };
+}
+
+/* ------------------------------ 저장소 ------------------------------ */
+function loadLocal() {
+  let d = null;
+  try { const raw = localStorage.getItem(LS.data); if (raw) d = JSON.parse(raw); } catch (e) { console.warn("local read fail", e); }
+  if (!d || typeof d !== "object") d = emptyData();
+  d = migrate(d);
+  try { const s = JSON.parse(localStorage.getItem(LS.settings) || "{}"); d.settings = Object.assign(d.settings, s || {}); } catch (e) {}
+  try { const p = localStorage.getItem(LS.pin); if (p) S.pin = p; } catch (e) {}
+  if (!d.settings.clientId && DEFAULT_CLIENT_ID) d.settings.clientId = DEFAULT_CLIENT_ID;
+  S.data = d;
+  return d;
+}
+function migrate(d) {
+  const base = emptyData();
+  d.settings = Object.assign({}, base.settings, d.settings || {});
+  d.assetTypes = Array.isArray(d.assetTypes) && d.assetTypes.length ? d.assetTypes : base.assetTypes;
+  d.sites = Array.isArray(d.sites) ? d.sites : [];
+  d.assets = Array.isArray(d.assets) ? d.assets : [];
+  d.sites.forEach((s) => { s.buildings = Array.isArray(s.buildings) ? s.buildings : [];
+    s.buildings.forEach((b) => { b.floors = Array.isArray(b.floors) ? b.floors : []; }); });
+  d.assets.forEach((a) => {
+    a.quantity = assetQty(a);
+    if (!a.pos) a.pos = null;
+    if (!a.photo) a.photo = null;
+  });
+  return d;
+}
+function persist(opts) {
+  opts = opts || {};
+  try {
+    S.data.updatedAt = nowISO();
+    localStorage.setItem(LS.data, JSON.stringify(S.data));
+    localStorage.setItem(LS.settings, JSON.stringify(S.data.settings));
+  } catch (e) {
+    toast("err", "로컬 저장 실패", "브라우저 저장 공간이 가득 찼을 수 있습니다. 사진 용량을 줄이거나 백업 후 정리해 주세요.");
+    return false;
+  }
+  updateDrivePill();
+  if (!opts.silent) scheduleDriveSave();
+  return true;
+}
+function savePin(p) { S.pin = p; try { localStorage.setItem(LS.pin, p); } catch (e) {} }
+
+/* ------------------------------ 샘플 도면/데이터 ------------------------------ */
+function samplePlanSVG(title, code) {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="640" viewBox="0 0 1000 640">
+  <defs>
+    <pattern id="h" width="20" height="20" patternUnits="userSpaceOnUse">
+      <path d="M20 0H0v20" fill="none" stroke="#DCE3EA" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="1000" height="640" fill="#FCFDFE"/>
+  <rect width="1000" height="640" fill="url(#h)"/>
+  <g stroke="#20303F" stroke-width="6" fill="none">
+    <rect x="70" y="70" width="860" height="500"/>
+  </g>
+  <g stroke="#20303F" stroke-width="3.5" fill="none">
+    <path d="M70 250h300M370 70v180M370 250v180M70 430h300M370 430h0"/>
+    <path d="M610 70v500M610 300h320M370 300h240"/>
+    <path d="M850 120v180"/>
+  </g>
+  <g stroke="#20303F" stroke-width="2" fill="none" opacity=".85">
+    <path d="M370 160h-40M370 200h-30"/>
+    <path d="M700 300v40M780 300v50M850 200v40"/>
+  </g>
+  <g fill="#78889A" font-family="monospace" font-size="15" letter-spacing="1.5">
+    <text x="150" y="165">회의실 A</text>
+    <text x="150" y="345">사무공간 1</text>
+    <text x="150" y="520">창고</text>
+    <text x="450" y="185">탕비실</text>
+    <text x="450" y="500">사무공간 2</text>
+    <text x="660" y="195">서버실</text>
+    <text x="660" y="450">생산 라인</text>
+    <text x="880" y="215" text-anchor="middle">계단</text>
+  </g>
+  <g stroke="#A8442E" stroke-width="2.5" fill="none">
+    <path d="M760 470h90v60h-90z" opacity=".8"/>
+  </g>
+  <g fill="#20303F" font-family="monospace" font-size="13">
+    <text x="70" y="605">${esc(code || "")}</text>
+    <text x="930" y="605" text-anchor="end">${esc(title || "")}</text>
+  </g>
+  <g stroke="#20303F" stroke-width="1.5" opacity=".7">
+    <path d="M70 40h860M70 34v12M930 34v12"/>
+    <path d="M40 70v500M34 70h12M34 570h12"/>
+  </g>
+  <g fill="#78889A" font-family="monospace" font-size="12" text-anchor="middle" letter-spacing="2">
+    <text x="500" y="30">25,800</text>
+    <text x="18" y="325" transform="rotate(-90 18 325)">15,000</text>
+  </g>
+</svg>`;
+}
+function sampleData() {
+  const d = emptyData();
+  d.settings.company = "샘플 주식회사";
+  d.settings.driveFolderName = "자산관리";
+  const plan = (t, c) => ({ dataUrl: svgToDataURL(samplePlanSVG(t, c)), name: t + " 도면.svg", uploadedAt: nowISO(), w: 1000, h: 640 });
+  const s1 = { id: "site_hq", name: "본사 사업장", address: "서울특별시 강남구 테헤란로 000", note: "본사 및 연구소",
+    buildings: [
+      { id: "bld_a", name: "본관", note: "지상 4층", floors: [
+        { id: "fl_a1", name: "1층", level: 1, plan: plan("본관 1층", "A-101"), note: "" },
+        { id: "fl_a2", name: "2층", level: 2, plan: plan("본관 2층", "A-201"), note: "" },
+        { id: "fl_b1", name: "지하1층", level: -1, plan: plan("본관 지하1층", "A-B01"), note: "창고·기계실" }
+      ]},
+      { id: "bld_b", name: "별관", note: "", floors: [
+        { id: "fl_c1", name: "1층", level: 1, plan: plan("별관 1층", "B-101"), note: "" }
+      ]}
+    ]};
+  const s2 = { id: "site_plant", name: "안산 공장", address: "경기도 안산시 단원구 000", note: "생산·물류",
+    buildings: [
+      { id: "bld_p1", name: "생산동", note: "", floors: [
+        { id: "fl_p1", name: "1층", level: 1, plan: plan("생산동 1층", "P-101"), note: "조립 라인" },
+        { id: "fl_p2", name: "2층", level: 2, plan: plan("생산동 2층", "P-201"), note: "" }
+      ]},
+      { id: "bld_p2", name: "물류창고", note: "", floors: [
+        { id: "fl_w1", name: "1층", level: 1, plan: plan("물류창고 1층", "W-101"), note: "" }
+      ]}
+    ]};
+  d.sites = [s1, s2];
+  const at = (i) => d.assetTypes[i].id;
+  const A = (o) => Object.assign({ id: uid("as"), vendor: "", note: "", depreciationAmount: 0, quantity: 1, status: "사용중", purchaseDate: todayISO(), createdAt: nowISO() }, o);
+  d.assets = [
+    A({ siteId: "site_hq", buildingId: "bld_a", floorId: "fl_a1", name: "노트북 16인치", typeId: at(1), price: 1850000, purchaseAmount: 3700000, quantity: 2, vendor: "OO전자", depreciationAmount: 1230000, pos: { x: 0.41, y: 0.66 }, note: "개발팀 2대" }),
+    A({ siteId: "site_hq", buildingId: "bld_a", floorId: "fl_a1", name: "프로젝터", typeId: at(1), price: 1200000, purchaseAmount: 1200000, quantity: 1, vendor: "AV스토어", depreciationAmount: 400000, pos: { x: 0.17, y: 0.24 } }),
+    A({ siteId: "site_hq", buildingId: "bld_a", floorId: "fl_a1", name: "회의용 테이블", typeId: at(0), price: 480000, purchaseAmount: 480000, quantity: 1, vendor: "가구랜드", depreciationAmount: 120000, pos: { x: 0.26, y: 0.4 } }),
+    A({ siteId: "site_hq", buildingId: "bld_a", floorId: "fl_a2", name: "데스크톱 PC", typeId: at(1), price: 1450000, purchaseAmount: 14500000, quantity: 10, vendor: "OO전자", depreciationAmount: 5800000, pos: { x: 0.2, y: 0.55 } }),
+    A({ siteId: "site_hq", buildingId: "bld_a", floorId: "fl_a2", name: "사무용 의자", typeId: at(0), price: 210000, purchaseAmount: 4200000, quantity: 20, vendor: "가구랜드", depreciationAmount: 1260000, pos: { x: 0.32, y: 0.68 } }),
+    A({ siteId: "site_hq", buildingId: "bld_a", floorId: "fl_b1", name: "UPS 전원장치", typeId: at(2), price: 3800000, purchaseAmount: 3800000, quantity: 1, vendor: "전력시스템", depreciationAmount: 1260000, pos: { x: 0.83, y: 0.72 } }),
+    A({ siteId: "site_hq", buildingId: "bld_b", floorId: "fl_c1", name: "복합기", typeId: at(0), price: 3200000, purchaseAmount: 3200000, quantity: 1, vendor: "OA상사", depreciationAmount: 1060000, pos: { x: 0.45, y: 0.4 } }),
+    A({ siteId: "site_plant", buildingId: "bld_p1", floorId: "fl_p1", name: "CNC 선반", typeId: at(2), price: 48000000, purchaseAmount: 96000000, quantity: 2, vendor: "정밀기계", depreciationAmount: 32000000, pos: { x: 0.66, y: 0.72 } }),
+    A({ siteId: "site_plant", buildingId: "bld_p1", floorId: "fl_p1", name: "안전 펜스", typeId: at(2), price: 1500000, purchaseAmount: 1500000, quantity: 1, vendor: "안전산업", depreciationAmount: 300000, pos: { x: 0.78, y: 0.5 } }),
+    A({ siteId: "site_plant", buildingId: "bld_p1", floorId: "fl_p2", name: "검사 장비", typeId: at(2), price: 12000000, purchaseAmount: 12000000, quantity: 1, vendor: "계측기술", depreciationAmount: 4000000, pos: { x: 0.5, y: 0.5 } }),
+    A({ siteId: "site_plant", buildingId: "bld_p2", floorId: "fl_w1", name: "지게차", typeId: at(3), price: 38000000, purchaseAmount: 38000000, quantity: 1, vendor: "중장비상사", depreciationAmount: 9500000, pos: { x: 0.5, y: 0.55 } })
+  ];
+  return d;
+}
+
+/* ==========================================================================
+   Google Drive 연동  (Google Identity Services 토큰 모델 + Drive REST v3)
+   서버 없이 정적 페이지에서 동작합니다. scope=drive.file → 앱이 만든 파일만 접근.
+   ========================================================================== */
+const Drive = {
+  ready() { return !!(S.data && S.data.settings.clientId); },
+  connected() { return !!S.drive.token && Date.now() < S.drive.exp; },
+
+  loadGis() {
+    if (window.google && window.google.accounts && window.google.accounts.oauth2) return Promise.resolve();
+    return new Promise((res, rej) => {
+      const ex = $("#gsiScript");
+      if (ex) { ex.addEventListener("load", () => res()); ex.addEventListener("error", () => rej(new Error("GIS 로드 실패"))); return; }
+      const s = document.createElement("script");
+      s.id = "gsiScript"; s.src = "https://accounts.google.com/gsi/client"; s.async = true; s.defer = true;
+      s.onload = () => res(); s.onerror = () => rej(new Error("Google 로그인 스크립트를 불러오지 못했습니다. 네트워크를 확인하세요."));
+      document.head.appendChild(s);
+    });
+  },
+
+  async connect(interactive) {
+    const cid = S.data.settings.clientId || DEFAULT_CLIENT_ID;
+    if (!cid) throw new Error("OAuth 클라이언트 ID가 없습니다. 데이터·백업 탭에서 입력해 주세요.");
+    if (!/^https?:$/.test(location.protocol)) throw new Error("Google Drive 연결은 https 주소(또는 GitHub Pages)에서만 동작합니다. 현재는 로컬 저장 모드로 사용하세요.");
+    await this.loadGis();
+    const self = this;
+    return new Promise((res, rej) => {
+      let settled = false;
+      const client = google.accounts.oauth2.initTokenClient({
+        client_id: cid,
+        scope: DRIVE_SCOPE,
+        prompt: interactive === false ? "" : "consent",
+        callback: (resp) => {
+          settled = true;
+          if (resp && resp.access_token) {
+            S.drive.token = resp.access_token;
+            S.drive.exp = Date.now() + (num(resp.expires_in) || 3500) * 1000 - 60000;
+            S.drive.lastError = "";
+            res(resp);
+          } else {
+            const m = (resp && resp.error) || "no_token";
+            S.drive.lastError = m; rej(new Error("Google 인증 실패: " + m));
+          }
+        },
+        error_callback: (e) => { settled = true; const m = (e && e.message) || (e && e.type) || "popup_error"; S.drive.lastError = m; rej(new Error("Google 인증 오류: " + m)); }
+      });
+      S.drive.client = client;
+      try { client.requestAccessToken({ prompt: interactive === false ? "" : "consent" }); }
+      catch (e) { settled = true; rej(e); }
+      setTimeout(() => { if (!settled) rej(new Error("인증 응답이 없습니다. 팝업 차단을 해제하고 다시 시도해 주세요.")); }, 60000);
+    });
+  },
+
+  async token(forceReload) {
+    if (!forceReload && this.connected()) return S.drive.token;
+    await this.connect(false);
+    return S.drive.token;
+  },
+
+  async api(url, opts, retried) {
+    const t = await this.token(retried);
+    const o = Object.assign({}, opts || {});
+    o.headers = Object.assign({}, o.headers || {}, { Authorization: "Bearer " + t });
+    const r = await fetch(url, o);
+    if (r.status === 401 && !retried) { S.drive.token = null; return this.api(url, opts, true); }
+    if (!r.ok) {
+      let msg = "Drive API 오류 " + r.status;
+      try { const j = await r.json(); if (j.error && j.error.message) msg += " — " + j.error.message; } catch (e) {}
+      throw new Error(msg);
+    }
+    return r;
+  },
+
+  async ensureFolder() {
+    const st = S.data.settings;
+    const name = st.driveFolderName || "자산관리";
+    if (st.driveFolderId) {
+      try {
+        const r = await this.api("https://www.googleapis.com/drive/v3/files/" + encodeURIComponent(st.driveFolderId) + "?fields=id,name,trashed");
+        const j = await r.json();
+        if (j && j.id && !j.trashed) return j.id;
+      } catch (e) { st.driveFolderId = ""; }
+    }
+    const q = "mimeType='application/vnd.google-apps.folder' and name='" + name.replace(/'/g, "\\'") + "' and trashed=false";
+    const r = await this.api("https://www.googleapis.com/drive/v3/files?q=" + encodeURIComponent(q) + "&fields=files(id,name)&spaces=drive&pageSize=10");
+    const j = await r.json();
+    if (j.files && j.files.length) { st.driveFolderId = j.files[0].id; return st.driveFolderId; }
+    const cr = await this.api("https://www.googleapis.com/drive/v3/files?fields=id", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: name, mimeType: "application/vnd.google-apps.folder" })
+    });
+    const cj = await cr.json();
+    st.driveFolderId = cj.id;
+    return st.driveFolderId;
+  },
+
+  multipart(meta, bodyBlob, boundary) {
+    const head = "--" + boundary + "\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n" + JSON.stringify(meta) + "\r\n";
+    const mid = "--" + boundary + "\r\nContent-Type: " + bodyBlob.type + "\r\n\r\n";
+    const tail = "\r\n--" + boundary + "--";
+    return new Blob([head, mid, bodyBlob, tail], { type: "multipart/related; boundary=" + boundary });
+  },
+
+  async findFile(folderId, name) {
+    const q = "name='" + name.replace(/'/g, "\\'") + "' and '" + folderId + "' in parents and trashed=false";
+    const r = await this.api("https://www.googleapis.com/drive/v3/files?q=" + encodeURIComponent(q) + "&fields=files(id,name,modifiedTime,size)&spaces=drive&pageSize=5");
+    const j = await r.json();
+    return (j.files && j.files[0]) || null;
+  },
+
+  async saveData(payload) {
+    const folderId = await this.ensureFolder();
+    const body = new Blob([JSON.stringify(payload, null, 0)], { type: "application/json" });
+    const existing = await this.findFile(folderId, DATA_FILENAME);
+    if (existing) {
+      const r = await this.api("https://www.googleapis.com/upload/drive/v3/files/" + encodeURIComponent(existing.id) + "?uploadType=media&fields=id,modifiedTime", {
+        method: "PATCH", headers: { "Content-Type": "application/json" }, body: body
+      });
+      S.data.settings.driveFileId = existing.id;
+      return r.json();
+    }
+    const bd = "am" + Math.random().toString(36).slice(2);
+    const blob = this.multipart({ name: DATA_FILENAME, parents: [folderId], mimeType: "application/json" }, body, bd);
+    const r = await this.api("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,modifiedTime", {
+      method: "POST", headers: { "Content-Type": "multipart/related; boundary=" + bd }, body: blob
+    });
+    const j = await r.json();
+    S.data.settings.driveFileId = j.id;
+    return j;
+  },
+
+  async loadData(folderId) {
+    const fid = folderId || S.data.settings.driveFolderId || (await this.ensureFolder());
+    const f = await this.findFile(fid, DATA_FILENAME);
+    if (!f) return null;
+    const r = await this.api("https://www.googleapis.com/drive/v3/files/" + encodeURIComponent(f.id) + "?alt=media");
+    const j = await r.json();
+    return { data: j, file: f };
+  },
+
+  async uploadPhoto(dataUrl, name) {
+    const folderId = await this.ensureFolder();
+    let photosId = S.data.settings.drivePhotoFolderId;
+    if (!photosId) {
+      const q = "mimeType='application/vnd.google-apps.folder' and name='photos' and '" + folderId + "' in parents and trashed=false";
+      const r = await this.api("https://www.googleapis.com/drive/v3/files?q=" + encodeURIComponent(q) + "&fields=files(id)&spaces=drive");
+      const j = await r.json();
+      if (j.files && j.files.length) photosId = j.files[0].id;
+      else {
+        const cr = await this.api("https://www.googleapis.com/drive/v3/files?fields=id", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: "photos", mimeType: "application/vnd.google-apps.folder", parents: [folderId] })
+        });
+        photosId = (await cr.json()).id;
+      }
+      S.data.settings.drivePhotoFolderId = photosId;
+    }
+    const bd = "am" + Math.random().toString(36).slice(2);
+    const blob = this.multipart({ name: name || ("photo_" + Date.now() + ".jpg"), parents: [photosId], mimeType: "image/jpeg" }, dataURLtoBlob(dataUrl), bd);
+    const r = await this.api("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink,thumbnailLink", {
+      method: "POST", headers: { "Content-Type": "multipart/related; boundary=" + bd }, body: blob
+    });
+    return r.json();
+  }
+};
+
+/* ---- 자동 저장 (디바운스) / 상태 표시 ---- */
+const scheduleDriveSave = debounce(async function () {
+  if (!S.data.settings.autoSync) return;
+  if (!Drive.ready() || !Drive.connected()) { updateDrivePill(); return; }
+  try { await saveToDrive(true); } catch (e) { S.drive.lastError = e.message; updateDrivePill(); }
+}, 6000);
+
+async function saveToDrive(silent) {
+  if (S.drive.busy) return;
+  if (!Drive.ready()) throw new Error("먼저 Google Drive 연결 설정(OAuth 클라이언트 ID)이 필요합니다.");
+  S.drive.busy = true; updateDrivePill();
+  try {
+    const payload = cloneForDrive(S.data);
+    const r = await Drive.saveData(payload);
+    S.data.settings.lastDriveSave = nowISO();
+    S.data.settings.driveFileId = r.id || S.data.settings.driveFileId;
+    try { localStorage.setItem(LS.settings, JSON.stringify(S.data.settings)); } catch (e) {}
+    S.drive.lastError = "";
+    if (!silent) toast("ok", "Google Drive 저장 완료", "‘" + (S.data.settings.driveFolderName || "자산관리") + "’ 폴더의 " + DATA_FILENAME + " 파일에 저장했습니다.");
+    return r;
+  } catch (e) {
+    S.drive.lastError = e.message;
+    if (!silent) toast("err", "Drive 저장 실패", e.message);
+    throw e;
+  } finally { S.drive.busy = false; updateDrivePill(); }
+}
+function cloneForDrive(d) {
+  /* 업로드용 사본: 원본 사진은 Drive에 이미 있고, 썸네일(작은 dataURL)은 백업을 위해 유지 */
+  return JSON.parse(JSON.stringify(d));
+}
+async function loadFromDrive(apply) {
+  S.drive.busy = true; updateDrivePill();
+  try {
+    const res = await Drive.loadData();
+    if (!res) { toast("warn", "드라이브에 데이터 없음", "‘" + (S.data.settings.driveFolderName || "자산관리") + "’ 폴더에 " + DATA_FILENAME + " 파일이 없습니다. 먼저 저장하세요."); return null; }
+    if (apply) {
+      const incoming = migrate(res.data);
+      const keepSettings = JSON.parse(JSON.stringify(S.data.settings));
+      S.data = incoming;
+      S.data.settings = Object.assign(S.data.settings, keepSettings, {
+        driveFolderId: res.file ? "" : S.data.settings.driveFolderId,
+        driveFileId: res.file ? res.file.id : S.data.settings.driveFileId,
+        lastDriveLoad: nowISO()
+      });
+      try { localStorage.setItem(LS.data, JSON.stringify(S.data)); localStorage.setItem(LS.settings, JSON.stringify(S.data.settings)); } catch (e) {}
+      syncGlobalFilters();
+      render();
+    }
+    return res;
+  } finally { S.drive.busy = false; updateDrivePill(); }
+}
+
+function driveStatus() {
+  if (!Drive.ready()) return { s: "", t: "로컬 저장 중", d: "드라이브 연결하기 (클릭)" };
+  if (S.drive.busy) return { s: "warn", t: "동기화 중…", d: "Google Drive" };
+  if (Drive.connected()) return { s: "ok", t: "드라이브 연결됨", d: (S.data.settings.lastDriveSave ? "최근 저장 " + relTime(S.data.settings.lastDriveSave) : "아직 저장 전") };
+  if (S.drive.lastError) return { s: "err", t: "드라이브 오류", d: S.drive.lastError.slice(0, 46) };
+  return { s: "warn", t: "드라이브 대기", d: "클릭해서 연결" };
+}
+function updateDrivePill() {
+  const st = driveStatus();
+  const dot = $("#driveDot"); if (!dot) return;
+  dot.className = "dot " + (st.s || "");
+  $("#driveName").textContent = st.t;
+  $("#driveInfo").textContent = st.d;
+}
+
+/* ---- 토스트 ---- */
+function toast(kind, title, msg) {
+  const root = $("#toastRoot"); if (!root) return;
+  const el = document.createElement("div");
+  el.className = "toast " + (kind === "ok" ? "ok" : kind === "err" ? "err" : "");
+  const icon = kind === "ok"
+    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4.5 4.5L19 7"/></svg>'
+    : kind === "err"
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 7.5v6M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 8v5M12 16.5h.01"/><circle cx="12" cy="12" r="9"/></svg>';
+  el.innerHTML = icon + "<div><b>" + esc(title) + "</b><span>" + esc(msg || "") + "</span></div>";
+  root.appendChild(el);
+  setTimeout(() => { el.style.transition = "opacity .25s, transform .25s"; el.style.opacity = "0"; el.style.transform = "translateX(14px)"; setTimeout(() => el.remove(), 280); }, kind === "err" ? 7000 : 4200);
+}
+
+/* ==========================================================================
+   PART 3 — 공통 뷰 헬퍼 · 대시보드 · 도면 배치 · 자산 목록
+   ========================================================================== */
+
+/* ------------------------------ 공통 헬퍼 ------------------------------ */
+function titleBlock(items) {
+  const cells = items.map((it) => '<div class="sb' + (it.grow ? " grow" : "") + '"><span class="sb-k">' + esc(it.k) + '</span><span class="sb-v">' + (it.html || esc(it.v || "—")) + "</span></div>").join("");
+  return '<div class="sheetbar no-print">' + cells + "</div>";
+}
+function sectionHead(em, title, right) {
+  return '<div class="h-sec"><h2><em>' + esc(em) + "</em>" + esc(title) + "</h2>" + (right ? '<div class="sp">' + right + "</div>" : "") + "</div>";
+}
+function emptyState(title, text, action) {
+  return '<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5 12 12l8-4.5M12 12v9"/></svg><h3>' + esc(title) + "</h3><p>" + esc(text) + "</p>" + (action || "") + "</div>";
+}
+function typePill(id) {
+  const t = assetType(id);
+  const c = typeColor(t);
+  return '<span class="pill" style="background:' + c + '14;color:' + shade(c, -0.28) + ";border-color:" + c + "40\">" + '<span class="chip-dot" style="background:' + c + '"></span>' + esc(t ? t.name : "미분류") + "</span>";
+}
+function statusPill(st) {
+  st = st || "사용중";
+  const cls = st === "사용중" ? "teal" : st === "보관" ? "brass" : st === "수리" ? "brass" : st === "처분" ? "rust" : "grey";
+  return '<span class="pill ' + cls + '">' + esc(st) + "</span>";
+}
+function shade(hex, amt) {   /* amt<0 어둡게, >0 밝게 */
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex || "#B8862B"); if (!m) return hex;
+  let r = parseInt(m[1].slice(0, 2), 16), g = parseInt(m[1].slice(2, 4), 16), b = parseInt(m[1].slice(4, 6), 16);
+  const f = (v) => clamp(Math.round(amt < 0 ? v * (1 + amt) : v + (255 - v) * amt), 0, 255);
+  return "#" + [f(r), f(g), f(b)].map((v) => v.toString(16).padStart(2, "0")).join("");
+}
+function siteOptions(sel) {
+  return '<option value="">전체 사업장</option>' + (S.data.sites || []).map((s) => '<option value="' + s.id + '"' + (sel === s.id ? " selected" : "") + ">" + esc(s.name) + "</option>").join("");
+}
+function typeOptions(sel) {
+  return '<option value="">전체 종류</option>' + (S.data.assetTypes || []).map((t) => '<option value="' + t.id + '"' + (sel === t.id ? " selected" : "") + ">" + esc(t.name) + "</option>").join("");
+}
+function floorOptions(sel, siteId) {
+  return allFloors().filter((x) => !siteId || x.site.id === siteId).map((x) =>
+    '<option value="' + x.floor.id + '"' + (sel === x.floor.id ? " selected" : "") + ">" + esc(x.site.name + " · " + x.building.name + " · " + x.floor.name) + "</option>").join("");
+}
+function assetsFiltered() {
+  const f = S.filters;
+  return (S.data.assets || []).filter((a) => {
+    if (f.site && a.siteId !== f.site) return false;
+    if (f.building && a.buildingId !== f.building) return false;
+    if (f.floor && a.floorId !== f.floor) return false;
+    if (f.type && a.typeId !== f.type) return false;
+    if (f.status && (a.status || "사용중") !== f.status) return false;
+    if (f.q) {
+      const hay = [a.name, a.vendor, a.note, a.code, assetTypeName(a.typeId), (floorRef(a.floorId) ? floorRef(a.floorId).site.name + " " + floorRef(a.floorId).building.name + " " + floorRef(a.floorId).floor.name : "")].join(" ").toLowerCase();
+      if (hay.indexOf(f.q.toLowerCase()) < 0) return false;
+    }
+    return true;
+  });
+}
+function sortedAssets(list) {
+  const k = S.sort.key, d = S.sort.dir;
+  const val = (a) => {
+    switch (k) {
+      case "name": return (a.name || "").toLowerCase();
+      case "qty": return assetQty(a);
+      case "cost": return assetCost(a);
+      case "dep": return num(a.depreciationAmount);
+      case "book": return assetBook(a);
+      case "type": return assetTypeName(a.typeId);
+      case "floor": { const r = floorRef(a.floorId); return r ? r.site.name + r.floor.name : ""; }
+      case "vendor": return a.vendor || "";
+      case "created": return a.createdAt || "";
+      default: return assetBook(a);
+    }
+  };
+  return list.slice().sort((a, b) => { const x = val(a), y = val(b); if (x < y) return -1 * d; if (x > y) return 1 * d; return 0; });
+}
+function exportCSV(list, filename) {
+  const head = ["사업장", "건물", "층", "제품명", "자산종류", "수량", "제품가격", "구입금액", "감가금액", "장부가액", "구입업체", "구입일", "상태", "도면좌표", "기타"];
+  const rows = list.map((a) => {
+    const r = floorRef(a.floorId);
+    return [r ? r.site.name : "", r ? r.building.name : "", r ? r.floor.name : "", a.name || "", assetTypeName(a.typeId),
+      assetQty(a), num(a.price), assetCost(a), num(a.depreciationAmount), assetBook(a), a.vendor || "", a.purchaseDate || "",
+      a.status || "", a.pos ? Math.round(a.pos.x * 100) + "%/" + Math.round(a.pos.y * 100) + "%" : "", a.note || ""];
+  });
+  const q = (v) => '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"';
+  const csv = "\ufeff" + [head, ...rows].map((r) => r.map(q).join(",")).join("\r\n");
+  download(filename || ("자산목록_" + todayISO() + ".csv"), csv, "text/csv;charset=utf-8");
+  toast("ok", "CSV 내보내기 완료", list.length + "건을 내려받았습니다.");
+}
+
+/* ------------------------------ 차트 ------------------------------ */
+function barChart(rows, unit) {
+  if (!rows.length) return emptyState("표시할 데이터가 없습니다", "자산을 등록하면 사업장별 집계가 여기에 표시됩니다.");
+  const max = Math.max.apply(null, rows.map((r) => Math.abs(r.value)).concat([1]));
+  return '<div class="bars">' + rows.map((r) =>
+    '<div class="bar-row"><span class="bl" title="' + esc(r.label) + '">' + esc(r.label) + "</span>" +
+    '<span class="bt"><i class="bf" style="width:' + (Math.abs(r.value) / max * 100).toFixed(2) + "%" + (r.color ? ";background:linear-gradient(90deg," + shade(r.color, -0.25) + "," + r.color + ")" : "") + '"></i></span>' +
+    '<span class="bv">' + esc(fmtShort(r.value)) + (unit || "원") + "</span></div>").join("") + "</div>";
+}
+function donutChart(items, total, centerLabel) {
+  const size = 176, r = size / 2 - 16, c = 2 * Math.PI * r;
+  let off = 0;
+  const segs = items.map((it) => {
+    const frac = total ? Math.max(0, it.value) / total : 0;
+    const len = c * frac;
+    const s = '<circle cx="' + size / 2 + '" cy="' + size / 2 + '" r="' + r + '" fill="none" stroke="' + it.color + '" stroke-width="21" stroke-dasharray="' + len.toFixed(2) + " " + (c - len).toFixed(2) + '" stroke-dashoffset="' + (-off).toFixed(2) + '" transform="rotate(-90 ' + size / 2 + " " + size / 2 + ')"/>';
+    off += len; return s;
+  }).join("");
+  return '<div class="donut-wrap"><div class="donut" style="width:' + size + "px;height:" + size + 'px">' +
+    '<svg width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + " " + size + '">' +
+    '<circle cx="' + size / 2 + '" cy="' + size / 2 + '" r="' + r + '" fill="none" stroke="#EDF1F5" stroke-width="21"/>' + segs + "</svg>" +
+    '<span class="dcenter"><b>' + esc(fmtShort(total)) + '</b><span>' + esc(centerLabel || "합계") + "</span></span></div>" +
+    '<div class="legend">' + items.map((it) => '<div class="legend-row"><span class="chip-dot" style="background:' + it.color + '"></span><span class="lg-n">' + esc(it.label) + '</span><span class="lg-v">' + esc(fmtShort(it.value)) + "원 · " + (total ? (it.value / total * 100).toFixed(0) : 0) + "%</span></div>").join("") +
+    "</div></div>";
+}
+function kpi(cls, key, valHtml, sub) {
+  return '<div class="kpi ' + cls + '"><div class="kk">' + esc(key) + '</div><div class="kv">' + valHtml + '</div><div class="ks">' + sub + "</div></div>";
+}
+
+/* ==========================================================================
+   대시보드
+   ========================================================================== */
+function viewDashboard() {
+  const list = assetsFiltered();
+  const t = summarize(list);
+  const scopeName = S.filters.site ? (findSite(S.filters.site) || {}).name : "전체 사업장";
+  const sites = (S.data.sites || []).filter((s) => !S.filters.site || s.id === S.filters.site);
+
+  /* 사업장별 집계 */
+  const bySite = sites.map((s) => {
+    const l = list.filter((a) => a.siteId === s.id);
+    return { site: s, sum: summarize(l), color: null };
+  }).filter((x) => x.sum.count > 0 || !S.filters.q);
+
+  /* 층별 현황 표 */
+  let rowsHtml = "";
+  let grand = { count: 0, qty: 0, cost: 0, dep: 0, book: 0 };
+  sites.forEach((s) => {
+    const siteList = list.filter((a) => a.siteId === s.id);
+    const ss = summarize(siteList);
+    grand.count += ss.count; grand.qty += ss.qty; grand.cost += ss.cost; grand.dep += ss.dep; grand.book += ss.book;
+    if (!ss.count) return;
+    rowsHtml += '<tr class="grp"><td colspan="3">' + esc(s.name) + (s.address ? ' <span class="sub" style="display:inline;color:#8A9AAA">' + esc(s.address) + "</span>" : "") + "</td>" +
+      '<td class="r mono-cell">' + ss.count + '</td><td class="r mono-cell">' + fmtNum(ss.qty) + '</td>' +
+      '<td class="r mono-cell">' + fmtWon(ss.cost) + '</td><td class="r mono-cell">' + fmtWon(ss.dep) + '</td><td class="r mono-cell strong">' + fmtWon(ss.book) + "</td></tr>";
+    (s.buildings || []).forEach((b) => {
+      (b.floors || []).forEach((f) => {
+        const fl = siteList.filter((a) => a.floorId === f.id);
+        const fs = summarize(fl);
+        const hasPlan = !!(f.plan && f.plan.dataUrl);
+        rowsHtml += "<tr>" +
+          '<td style="padding-left:26px"><span class="sub" style="display:inline;color:#8A9AAA">' + esc(b.name) + "</span></td>" +
+          "<td><span class='" + (hasPlan ? "linkish" : "") + "'" + (hasPlan ? ' data-goto-floor="' + f.id + '" style="cursor:pointer"' : "") + ">" + esc(f.name) + "</span>" +
+          (hasPlan ? "" : ' <span class="pill grey" title="도면 미등록">도면없음</span>') + "</td>" +
+          "<td>" + (fs.count ? fl.slice(0, 3).map((a) => '<span class="pill grey">' + esc(a.name) + "</span>").join(" ") + (fl.length > 3 ? ' <span class="sub" style="display:inline">+' + (fl.length - 3) + "</span>" : "") : '<span class="sub" style="display:inline">—</span>') + "</td>" +
+          '<td class="r mono-cell">' + fs.count + '</td><td class="r mono-cell">' + fmtNum(fs.qty) + '</td>' +
+          '<td class="r mono-cell">' + fmtWon(fs.cost) + '</td><td class="r mono-cell">' + fmtWon(fs.dep) + '</td><td class="r mono-cell strong">' + fmtWon(fs.book) + "</td></tr>";
+      });
+    });
+  });
+
+  /* 종류별 집계 */
+  const typeRows = (S.data.assetTypes || []).map((tp) => {
+    const l = list.filter((a) => a.typeId === tp.id);
+    const sq = l.reduce((n, a) => n + assetQty(a), 0);
+    return { label: tp.name, color: tp.color, value: l.reduce((n, a) => n + assetBook(a), 0), qty: sq, count: l.length };
+  }).filter((x) => x.value > 0 || x.count > 0);
+  const untyped = list.filter((a) => !assetType(a.typeId));
+  if (untyped.length) typeRows.push({ label: "미분류", color: "#78889A", value: untyped.reduce((n, a) => n + assetBook(a), 0), qty: untyped.reduce((n, a) => n + assetQty(a), 0), count: untyped.length });
+  const typeTotal = typeRows.reduce((n, x) => n + x.value, 0);
+
+  const recent = sortedAssets(list).sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || ""))).slice(0, 6);
+
+  return titleBlock([
+    { k: "Dashboard", v: "자산 현황 대시보드", grow: true },
+    { k: "사업장", v: scopeName },
+    { k: "기준일", v: fmtDate(nowISO()) },
+    { k: "자산", html: fmtNum(t.count) + ' <small>건</small>' },
+    { k: "관리 모드", html: S.admin ? '<span class="stamp">ADMIN</span>' : "조회 모드" }
+  ]) + '<div class="wrap">' +
+    '<div class="kpis">' +
+      kpi("k1", "총 재고 수량", fmtNum(t.qty) + "<u>점</u>", "<b>" + fmtNum(t.count) + "</b>개 품목 · " + (S.filters.site ? scopeName : sites.length + "개 사업장")) +
+      kpi("k2", "취득원가 합계", "<span>" + esc(fmtShort(t.cost)) + "</span><u>원</u>", "실제 " + esc(fmtWon(t.cost))) +
+      kpi("k3", "감가상각누계", "<span>" + esc(fmtShort(t.dep)) + "</span><u>원</u>", "취득원가 대비 <b>" + (t.cost ? (t.dep / t.cost * 100).toFixed(1) : "0.0") + "%</b>") +
+      kpi("k4", "장부가액 합계", "<span>" + esc(fmtShort(t.book)) + "</span><u>원</u>", "실제 " + esc(fmtWon(t.book))) +
+    "</div>" +
+
+    sectionHead("Charts", "집계 분석", '<button class="btn sm" data-act="csv-bars">CSV</button>') +
+    '<div class="grid2" style="grid-template-columns:minmax(0,1.25fr) minmax(0,1fr)">' +
+      '<div class="card"><div class="card-h"><h3>사업장별 장부가액</h3><span class="sp">단위 원</span></div><div class="card-b">' +
+        barChart(bySite.map((x) => ({ label: x.site.name, value: x.sum.book })), "원") + "</div></div>" +
+      '<div class="card"><div class="card-h"><h3>자산 종류별 장부가액</h3><span class="sp">장부가액 기준</span></div><div class="card-b">' +
+        donutChart(typeRows, typeTotal, "장부가액") + "</div></div>" +
+    "</div>" +
+
+    sectionHead("By floor", "층별 자산 현황", '<span class="sub" style="color:var(--muted);font-size:11.5px">층 이름 또는 종류를 클릭하면 도면으로 이동합니다</span>') +
+    '<div class="card"><div class="card-b tight"><div class="tbl-wrap"><table class="tbl"><thead><tr>' +
+      '<th>사업장 / 건물</th><th>층</th><th>주요 자산</th><th class="r">자산수</th><th class="r">수량</th><th class="r">취득원가</th><th class="r">감가누계</th><th class="r">장부가액</th>' +
+      "</tr></thead><tbody>" + (rowsHtml || '<tr><td colspan="8">' + emptyState("표시할 자산이 없습니다", "관리자 모드에서 사업장·층·자산을 등록하거나 샘플 데이터를 불러오세요.", '<button class="btn brass" data-act="seed">샘플 데이터 불러오기</button>') + "</td></tr>") +
+      (rowsHtml ? '<tr class="tot"><td colspan="3">합계</td><td class="r mono-cell">' + grand.count + '</td><td class="r mono-cell">' + fmtNum(grand.qty) + '</td><td class="r mono-cell">' + fmtWon(grand.cost) + '</td><td class="r mono-cell">' + fmtWon(grand.dep) + '</td><td class="r mono-cell">' + fmtWon(grand.book) + "</td></tr>" : "") +
+      "</tbody></table></div></div></div>" +
+
+    sectionHead("Breakdown", "사업장 요약") +
+    '<div class="grid3">' + (bySite.length ? bySite.map(siteCard).join("") : '<div class="card"><div class="card-b">' + emptyState("등록된 사업장이 없습니다", "관리자 모드 → 사업장 탭에서 사업장을 먼저 등록하세요.") + "</div></div>") + "</div>" +
+
+    sectionHead("Recent", "최근 등록 자산", '<button class="btn sm" data-route-jump="assets">전체 보기</button>') +
+    '<div class="card"><div class="card-b tight">' + (recent.length ? recent.map(recentRow).join("") : '<div class="card-b">' + emptyState("자산이 없습니다", "상단 ‘자산 등록’ 버튼으로 첫 자산을 등록하세요.") + "</div>") + "</div></div>" +
+    "</div>";
+}
+
+function siteCard(x) {
+  const s = x.site, sum = x.sum;
+  const blds = (s.buildings || []).length, flrs = (s.buildings || []).reduce((n, b) => n + ((b.floors || []).length), 0);
+  const withPlan = (s.buildings || []).reduce((n, b) => n + ((b.floors || []).filter((f) => f.plan && f.plan.dataUrl).length), 0);
+  return '<div class="card"><div class="card-h"><h3>' + esc(s.name) + '</h3><span class="sp">' + (sum.book ? fmtShort(sum.book) + "원" : "—") + '</span></div><div class="card-b">' +
+    '<div class="kv-mini" style="margin-bottom:12px"><span>건물 <b>' + blds + "</b></span><span>층 <b>" + flrs + '</b></span><span>자산 <b>' + sum.count + '</b></span><span>수량 <b>' + fmtNum(sum.qty) + "</b></span></div>" +
+    '<div class="bar-row" style="grid-template-columns:72px 1fr 84px"><span class="bl">취득</span><span class="bt"><i class="bf" style="width:' + (sum.cost ? 100 : 0) + '%;background:linear-gradient(90deg,#3D6285,#5B7FA3)"></i></span><span class="bv">' + fmtShort(sum.cost) + "</span></div>" +
+    '<div class="bar-row" style="grid-template-columns:72px 1fr 84px;margin-top:7px"><span class="bl">감가</span><span class="bt"><i class="bf" style="width:' + (sum.cost ? (sum.dep / sum.cost * 100) : 0) + '%;background:linear-gradient(90deg,#8A3521,#C05A3E)"></i></span><span class="bv">' + fmtShort(sum.dep) + "</span></div>" +
+    '<div class="bar-row" style="grid-template-columns:72px 1fr 84px;margin-top:7px"><span class="bl">장부</span><span class="bt"><i class="bf" style="width:' + (sum.cost ? (sum.book / sum.cost * 100) : 0) + '%;background:linear-gradient(90deg,#0C5B55,#1E9C90)"></i></span><span class="bv">' + fmtShort(sum.book) + "</span></div>" +
+    '<div style="margin-top:14px;display:flex;gap:6px;flex-wrap:wrap"><button class="btn xs" data-goto-site="' + s.id + '">도면 보기</button><button class="btn xs" data-filter-site="' + s.id + '">자산 목록</button>' +
+    (withPlan < flrs ? '<span class="pill brass">도면 ' + withPlan + "/" + flrs + " 등록</span>" : '<span class="pill teal">도면 완비</span>') + "</div></div></div>";
+}
+function recentRow(a) {
+  const r = floorRef(a.floorId);
+  return '<div class="list-row"><div class="lr-main" style="min-width:0"><div class="lr-t">' +
+    '<span class="linkish" data-open-asset="' + a.id + '" style="cursor:pointer">' + esc(a.name) + "</span>" + typePill(a.typeId) + statusPill(a.status) + "</div>" +
+    '<div class="lr-s"><span>' + esc(r ? r.site.name + " · " + r.building.name + " · " + r.floor.name : "위치 미지정") + "</span><span>수량 " + fmtNum(assetQty(a)) + "</span><span>" + esc(a.vendor || "구입업체 미입력") + "</span><span>" + relTime(a.createdAt) + "</span></div></div>" +
+    '<div style="text-align:right"><div style="font-weight:700;font-variant-numeric:tabular-nums">' + fmtWon(assetBook(a)) + '</div><div style="font-size:11px;color:var(--muted)">취득 ' + fmtWon(assetCost(a)) + "</div></div></div>";
+}
+
+/* ==========================================================================
+   도면 배치 화면
+   ========================================================================== */
+function ensureFpDefault() {
+  const fl = allFloors();
+  if (!fl.length) { S.fp.siteId = S.fp.buildingId = S.fp.floorId = null; return; }
+  const cur = S.fp.floorId ? floorRef(S.fp.floorId) : null;
+  if (cur && (!S.filters.site || cur.site.id === S.filters.site)) return;
+  const pool = S.filters.site ? fl.filter((x) => x.site.id === S.filters.site) : fl;
+  const pick = (pool.length ? pool : fl)[0];
+  S.fp.siteId = pick.site.id; S.fp.buildingId = pick.building.id; S.fp.floorId = pick.floor.id;
+  S.fp.sel = null;
+}
+function viewFloorplan() {
+  ensureFpDefault();
+  const ref = S.fp.floorId ? floorRef(S.fp.floorId) : null;
+  if (!ref) {
+    return titleBlock([{ k: "Floor plan", v: "도면 배치", grow: true }, { k: "상태", v: "도면 없음" }]) +
+      '<div class="wrap"><div class="card"><div class="card-b">' +
+      emptyState("사업장과 층을 먼저 등록하세요", "도면을 배치하려면 관리자 모드에서 사업장 → 건물 → 층을 등록한 뒤 각 층의 도면 이미지를 업로드해야 합니다.",
+        '<button class="btn brass" data-act="go-admin-sites">관리자 모드로 이동</button> <button class="btn" data-act="seed">샘플 데이터 불러오기</button>') +
+      "</div></div></div>";
+  }
+  const site = ref.site, bld = ref.building, fl = ref.floor;
+  const list = assetsInFloor(fl.id).filter((a) => { const f = S.filters; if (f.type && a.typeId !== f.type) return false; if (f.status && (a.status || "사용중") !== f.status) return false; return true; });
+  const sum = summarize(list);
+  const sel = S.fp.sel ? (S.data.assets || []).find((a) => a.id === S.fp.sel) : null;
+  const planSrc = fl.plan && fl.plan.dataUrl ? fl.plan.dataUrl : "";
+
+  /* 좌측 트리 */
+  let tree = "";
+  (S.data.sites || []).forEach((s) => {
+    if (S.filters.site && s.id !== S.filters.site) return;
+    const cnt = assetsInFloor0(s).length;
+    tree += '<button class="tree-site" data-tree-site="' + s.id + '"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V9l8-5 8 5v11"/><path d="M9 20v-6h6v6"/></svg>' + esc(s.name) + '<span class="cnt">' + cnt + "</span></button>";
+    (s.buildings || []).forEach((b) => {
+      tree += '<div class="tree-bld">' + esc(b.name) + "</div>";
+      (b.floors || []).forEach((f) => {
+        const n = assetsInFloor(f.id).length;
+        tree += '<button class="tree-floor' + (f.id === fl.id ? " on" : "") + '" data-tree-floor="' + f.id + '">' +
+          '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">' + (f.plan && f.plan.dataUrl ? '<rect x="3" y="4" width="18" height="16" rx="1.5"/><path d="M3 10h9M12 10v10"/>' : '<rect x="3" y="4" width="18" height="16" rx="1.5" stroke-dasharray="2 3"/>') + "</svg>" +
+          "<span>" + esc(f.name) + '</span><span class="cnt">' + (n || "—") + "</span></button>";
+      });
+    });
+  });
+
+  const mkHtml = list.filter((a) => a.pos).map((a, i) => {
+    const t = assetType(a.typeId);
+    const isSel = sel && sel.id === a.id;
+    return '<div class="mk' + (isSel ? " sel" : "") + '" data-mk="' + a.id + '" style="left:' + (a.pos.x * 100).toFixed(3) + "%;top:" + (a.pos.y * 100).toFixed(3) + "%" + (S.admin ? ' data-drag="1"' : "") + '" title="' + esc(a.name) + '">' +
+      '<span class="pin"' + (isSel || !S.admin ? "" : " style=\"background:" + typeColor(t) + "\"") + "><b>" + (i + 1) + "</b></span>" +
+      '<span class="lbl">' + esc(a.name) + " <b>" + fmtShort(assetBook(a)) + "</b></span></div>";
+  }).join("");
+
+  const noPos = list.filter((a) => !a.pos);
+
+  return titleBlock([
+    { k: "Floor plan", html: esc(site.name) + " · " + esc(bld.name) + " · " + esc(fl.name), grow: true },
+    { k: "도면", v: planSrc ? (fl.plan.name || "등록됨") : "미등록" },
+    { k: "배치 자산", html: list.filter((a) => a.pos).length + " / " + list.length + ' <small>건</small>' },
+    { k: "장부가액", v: fmtWon(sum.book) },
+    { k: "관리", html: S.admin ? '<span class="stamp">ADMIN</span>' : "조회 모드" }
+  ]) + '<div class="wrap"><div class="fp-layout">' +
+    '<div class="card"><div class="card-h"><h3>사업장 / 층</h3>' + (S.admin ? '<span class="sp"><button class="btn xs" data-act="admin-sites">편집</button></span>' : "") + '</div><div class="card-b" style="padding:10px"><div class="tree">' + (tree || '<div class="empty" style="padding:20px 6px"><p>사업장이 없습니다.</p></div>') + "</div></div></div>" +
+
+    '<div class="fp-main">' +
+      '<div class="sheet">' +
+        '<div class="sheet-bar"><span class="sb-title">' + esc(fl.name) + " 도면</span>" +
+          '<span class="sb-meta">' + esc((fl.plan && fl.plan.code) || (site.name + " / " + bld.name)) + "</span>" +
+          '<span class="sp">' +
+            (S.admin ? '<button class="zbtn" data-fp="upload-plan">도면 ' + (planSrc ? "교체" : "업로드") + "</button>" : "") +
+            '<button class="zbtn" data-fp="zoom-out">−</button><span class="sb-meta" style="min-width:40px;text-align:center">' + Math.round(S.fp.zoom * 100) + '%</span><button class="zbtn" data-fp="zoom-in">+</button>' +
+            '<button class="zbtn" data-fp="zoom-reset">맞춤</button>' +
+            '<button class="zbtn" data-act="print">인쇄</button>' +
+          "</span>" +
+        "</div>" +
+        '<div class="fp-scroll" id="fpScroll"><div class="fp-stage" id="fpStage" style="width:' + (S.fp.zoom * 100) + '%">' +
+          '<div class="fp-canvas' + (S.fp.placing ? " placing" : "") + '" id="fpCanvas">' +
+            (planSrc ? '<img src="' + planSrc + '" alt="' + esc(fl.name) + ' 도면" />' : "") +
+            (planSrc ? mkHtml : '<div class="fp-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg><h3 style="font-size:14px;color:var(--text-2);font-weight:700">도면 이미지가 없습니다</h3><p style="max-width:380px">이 층의 도면 이미지(JPG · PNG · 휴대폰 촬영본)를 업로드하면 자산 위치를 배치할 수 있습니다.</p>' + (S.admin ? '<button class="btn brass" data-fp="upload-plan">도면 업로드</button>' : '<button class="btn" data-act="admin-gate">관리자 모드에서 업로드</button>') + "</div>") +
+          "</div></div>" +
+          (S.fp.placing ? '<div class="fp-hint">위치 지정 중 — 도면 위에서 자산을 놓을 지점을 클릭하세요. <button class="btn xs" data-fp="cancel-place">취소</button></div>' : "") +
+        "</div>" +
+      "</div>" +
+
+      '<div class="fp-side">' + detailPanel(sel, ref) + assetListPanel(list, noPos) + "</div>" +
+    "</div></div></div>";
+}
+function assetsInFloor0(site) {   /* 사업장 전체 자산 수 */
+  return (S.data.assets || []).filter((a) => a.siteId === site.id);
+}
+function detailPanel(sel, ref) {
+  if (!sel) {
+    return '<div class="card"><div class="card-h"><h3>자산 상세</h3><span class="sp">' + (ref ? esc(ref.floor.name) : "") + '</span></div><div class="card-b">' +
+      emptyState("자산을 선택하세요", "도면의 마커나 아래 목록을 클릭하면 상세 정보가 표시됩니다.") + "</div></div>";
+  }
+  const ph = sel.photo && sel.photo.dataUrl;
+  const r = floorRef(sel.floorId);
+  return '<div class="card"><div class="card-h"><h3>자산 상세</h3><span class="sp">' + esc(sel.code || "—") + "</span></div>" +
+    (ph ? '<img class="dt-photo" src="' + ph + '" alt="' + esc(sel.name) + ' 제품 사진" data-open-photo="' + sel.id + '" style="cursor:zoom-in" />'
+        : '<div class="dt-photo-ph" title="제품 사진 없음"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 16 5-5 4 4 3-3 6 6"/><circle cx="8.5" cy="9" r="1.3"/></svg></div>') +
+    '<div class="card-b" style="padding:12px 0 0"><div class="dl">' +
+      "<dt>제품명</dt><dd style='font-weight:700'>" + esc(sel.name) + "</dd>" +
+      "<dt>자산 종류</dt><dd>" + typePill(sel.typeId) + "</dd>" +
+      "<dt>위치</dt><dd>" + esc(r ? r.site.name + " · " + r.building.name + " · " + r.floor.name : "—") + "</dd>" +
+      "<dt>수량</dt><dd>" + fmtNum(assetQty(sel)) + " 점</dd>" +
+      "<dt>제품가격</dt><dd>" + fmtWon(sel.price) + "</dd>" +
+      "<dt>구입업체</dt><dd>" + esc(sel.vendor || "—") + "</dd>" +
+      "<dt>구입금액</dt><dd class='money'>" + fmtWon(assetCost(sel)) + "</dd>" +
+      "<dt>감가금액</dt><dd style='color:var(--rust)'>− " + fmtWon(sel.depreciationAmount) + "</dd>" +
+      "<dt>장부가액</dt><dd class='money' style='color:var(--teal)'>" + fmtWon(assetBook(sel)) + "</dd>" +
+      "<dt>구입일</dt><dd>" + fmtDate(sel.purchaseDate) + "</dd>" +
+      "<dt>상태</dt><dd>" + statusPill(sel.status) + "</dd>" +
+      "<dt>도면 좌표</dt><dd>" + (sel.pos ? (sel.pos.x * 100).toFixed(1) + "% / " + (sel.pos.y * 100).toFixed(1) + "%" : '<span class="pill grey">미배치</span>') + "</dd>" +
+      "<dt>기타</dt><dd>" + (sel.note ? esc(sel.note).replace(/\n/g, "<br>") : "—") + "</dd>" +
+      "</div></div>" +
+    '<div class="card-h" style="border-top:1px solid var(--line-soft);border-bottom:none;padding:11px 14px">' +
+      '<button class="btn sm" data-open-asset="' + sel.id + '">전체 정보</button>' +
+      (S.admin ? '<span class="sp"><button class="btn sm" data-fp-place="' + sel.id + '">위치 지정</button><button class="btn sm" data-edit-asset="' + sel.id + '">수정</button><button class="btn sm danger" data-del-asset="' + sel.id + '">삭제</button></span>' : "") +
+    "</div></div>";
+}
+function assetListPanel(list, noPos) {
+  return '<div class="card" style="margin-top:14px"><div class="card-h"><h3>층 자산 목록</h3><span class="sp">' + list.length + "건 · 장부 " + fmtShort(summarize(list).book) + '원</span></div><div class="card-b tight">' +
+    (list.length ? list.map((a, i) => {
+      const has = !!a.pos;
+      return '<div class="list-row" data-mk-row="' + a.id + '" style="cursor:pointer">' +
+        '<span style="width:20px;font-family:var(--mono);font-size:11px;color:var(--muted);flex:none">' + (has ? i + 1 : "–") + "</span>" +
+        (a.photo && a.photo.dataUrl ? '<img class="thumb" src="' + a.photo.dataUrl + '" alt="" />' : '<span class="thumb-ph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 16 5-5 4 4 3-3 6 6"/></svg></span>') +
+        '<div class="lr-main"><div class="lr-t" style="font-size:12.5px">' + esc(a.name) + "</div>" +
+        '<div class="lr-s"><span>' + typePill(a.typeId) + "</span><span>" + fmtNum(assetQty(a)) + "점</span><span>" + esc(fmtShort(assetBook(a))) + "원</span>" + (has ? "" : '<span class="pill grey">도면 미배치</span>') + "</div></div></div>";
+    }).join("") : '<div style="padding:16px" class="empty"><p>이 층에 등록된 자산이 없습니다.</p></div>') +
+    "</div></div>";
+}
+
+/* ==========================================================================
+   자산 목록
+   ========================================================================== */
+function viewAssets() {
+  const f = S.filters;
+  const all = assetsFiltered();
+  const list = sortedAssets(all);
+  const t = summarize(list);
+  const th = (key, label, cls) => '<th class="sortable ' + (cls || "") + '" data-sort="' + key + '">' + esc(label) + (S.sort.key === key ? " " + (S.sort.dir > 0 ? "▲" : "▼") : "") + "</th>";
+  return titleBlock([
+    { k: "Register", v: "자산 목록", grow: true },
+    { k: "조회 결과", html: fmtNum(list.length) + ' <small>건 / 전체 ' + fmtNum((S.data.assets || []).length) + "건</small>" },
+    { k: "총 수량", v: fmtNum(t.qty) + " 점" },
+    { k: "장부가액", v: fmtWon(t.book) },
+    { k: "관리", html: S.admin ? '<span class="stamp">ADMIN</span>' : "조회 모드" }
+  ]) + '<div class="wrap">' +
+    '<div class="card"><div class="card-b"><div class="filters">' +
+      '<input class="inp grow" id="fQ" placeholder="제품명 · 구입업체 · 기타 검색" value="' + esc(f.q) + '" />' +
+      '<select class="inp" id="fSite">' + siteOptions(f.site) + "</select>" +
+      '<select class="inp" id="fType">' + typeOptions(f.type) + "</select>" +
+      '<select class="inp" id="fStatus"><option value="">전체 상태</option>' + ["사용중", "보관", "수리", "처분", "폐기"].map((s) => '<option' + (f.status === s ? " selected" : "") + ">" + s + "</option>").join("") + "</select>" +
+      '<select class="inp" id="fFloor"><option value="">전체 층</option>' + floorOptions(f.floor, f.site) + "</select>" +
+      '<button class="btn" data-act="filter-reset">초기화</button>' +
+      '<span style="flex:1"></span>' +
+      '<button class="btn" data-act="csv-list">CSV 내보내기</button>' +
+      (S.admin ? '<button class="btn danger" data-act="bulk-del">선택 삭제</button>' : "") +
+    "</div></div></div>" +
+
+    sectionHead("Result", list.length + "건 자산", '<span style="font-size:11.5px;color:var(--muted)">취득 ' + fmtWon(t.cost) + " · 감가 " + fmtWon(t.dep) + "</span>") +
+    '<div class="card"><div class="card-b tight"><div class="tbl-wrap"><table class="tbl"><thead><tr>' +
+      (S.admin ? '<th class="c" style="width:34px"><input type="checkbox" id="chkAll" /></th>' : "") +
+      '<th style="width:46px" class="c">사진</th>' +
+      th("name", "제품명") + th("type", "자산 종류") + th("floor", "위치") + th("vendor", "구입업체") +
+      th("qty", "수량", "r") + th("cost", "구입금액", "r") + th("dep", "감가금액", "r") + th("book", "장부가액", "r") +
+      '<th class="c">상태</th><th class="c">관리</th>' +
+      "</tr></thead><tbody>" +
+      (list.length ? list.map((a) => {
+        const r = floorRef(a.floorId);
+        return "<tr" + (S.fp.sel === a.id ? ' class="sel"' : "") + ">" +
+          (S.admin ? '<td class="c"><input type="checkbox" class="chkRow" value="' + a.id + '" /></td>' : "") +
+          '<td class="c">' + (a.photo && a.photo.dataUrl ? '<img class="thumb" src="' + a.photo.dataUrl + '" alt="" data-open-photo="' + a.id + '" style="cursor:zoom-in" />' : '<span class="thumb-ph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 16 5-5 4 4 3-3 6 6"/></svg></span>') + "</td>" +
+          '<td><button class="linkish" data-open-asset="' + a.id + '">' + esc(a.name) + "</button>" + (a.code ? '<span class="sub">' + esc(a.code) + "</span>" : "") + "</td>" +
+          "<td>" + typePill(a.typeId) + "</td>" +
+          '<td><span style="font-size:12px">' + esc(r ? r.site.name : "—") + '</span><span class="sub">' + esc(r ? r.building.name + " · " + r.floor.name : "위치 미지정") + (a.pos ? "" : " · 도면 미배치") + "</span></td>" +
+          "<td>" + esc(a.vendor || "—") + "</td>" +
+          '<td class="r mono-cell">' + fmtNum(assetQty(a)) + "</td>" +
+          '<td class="r mono-cell">' + fmtWon(assetCost(a)) + "</td>" +
+          '<td class="r mono-cell" style="color:var(--rust)">' + fmtWon(a.depreciationAmount) + "</td>" +
+          '<td class="r mono-cell strong">' + fmtWon(assetBook(a)) + "</td>" +
+          '<td class="c">' + statusPill(a.status) + "</td>" +
+          '<td class="c" style="white-space:nowrap">' +
+            (r && r.floor.plan && r.floor.plan.dataUrl ? '<button class="btn xs" data-goto-floor="' + a.floorId + '" data-focus="' + a.id + '">도면</button> ' : "") +
+            (S.admin ? '<button class="btn xs" data-edit-asset="' + a.id + '">수정</button> <button class="btn xs danger" data-del-asset="' + a.id + '">삭제</button>' : "") +
+          "</td></tr>";
+      }).join("")
+        : '<tr><td colspan="' + (S.admin ? 12 : 11) + '">' + emptyState("조건에 맞는 자산이 없습니다", "필터를 초기화하거나 새 자산을 등록하세요.", '<button class="btn" data-act="filter-reset">필터 초기화</button> <button class="btn brass" data-act="add-asset">자산 등록</button>') + "</td></tr>") +
+      (list.length ? '<tr class="tot"><td' + (S.admin ? ' colspan="6"' : ' colspan="5"') + ">합계 " + list.length + '건<td class="r mono-cell">' + fmtNum(t.qty) + '</td><td class="r mono-cell">' + fmtWon(t.cost) + '</td><td class="r mono-cell">' + fmtWon(t.dep) + '</td><td class="r mono-cell">' + fmtWon(t.book) + '</td><td colspan="2"></td></tr>' : "") +
+      "</tbody></table></div></div></div>" +
+    (list.length ? '<p style="margin-top:12px;font-size:11.5px;color:var(--muted);line-height:1.6">금액 기준 — <b>구입금액</b>은 취득원가(미입력 시 제품가격 × 수량)이고, <b>감가금액</b>은 감가상각누계액입니다. <b>장부가액 = 구입금액 − 감가금액</b>.</p>' : "") +
+    "</div>";
+}
+
+/* ==========================================================================
+   PART 4 — 모달 · 자산 등록/수정 폼 · 관리자 모드 · 데이터/백업
+   ========================================================================== */
+
+/* ------------------------------ 모달 ------------------------------ */
+function openModal(cfg) {
+  closeModal();
+  const root = $("#modalRoot");
+  const mask = document.createElement("div");
+  mask.className = "mask";
+  mask.innerHTML =
+    '<div class="modal ' + (cfg.size || "") + '" role="dialog" aria-modal="true">' +
+      '<div class="modal-h"><h3>' + esc(cfg.title) + "</h3>" + (cfg.sub ? '<span class="sub">' + esc(cfg.sub) + "</span>" : "") +
+        '<button class="x" data-close="1" aria-label="닫기"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>' +
+      '<div class="modal-b">' + (cfg.body || "") + "</div>" +
+      (cfg.foot ? '<div class="modal-f">' + cfg.foot + "</div>" : "") +
+    "</div>";
+  mask.addEventListener("mousedown", (e) => { if (e.target === mask && !cfg.locked) closeModal(); });
+  root.appendChild(mask);
+  const first = mask.querySelector("input:not([type=hidden]),select,textarea");
+  if (first && cfg.focus !== false) setTimeout(() => first.focus(), 30);
+  if (cfg.onMount) cfg.onMount(mask);
+  return mask;
+}
+function closeModal() { const r = $("#modalRoot"); if (r) r.innerHTML = ""; }
+function confirmModal(title, text, onYes, yesLabel) {
+  openModal({
+    title: title, size: "narrow",
+    body: '<p style="font-size:13px;line-height:1.7;color:var(--text-2)">' + text + "</p>",
+    foot: '<button class="btn" data-close="1">취소</button><span class="sp"></span><button class="btn danger" id="cfmYes">' + esc(yesLabel || "삭제") + "</button>",
+    onMount: (m) => { $("#cfmYes", m).addEventListener("click", () => { closeModal(); onYes(); }); }
+  });
+}
+function promptModal(title, label, value, onOk, hint, type) {
+  openModal({
+    title: title, size: "narrow",
+    body: '<div class="field"><label>' + esc(label) + '</label><input class="inp" id="pmVal" type="' + (type || "text") + '" value="' + esc(value == null ? "" : value) + '" />' + (hint ? '<span class="hint">' + esc(hint) + "</span>" : "") + "</div>",
+    foot: '<button class="btn" data-close="1">취소</button><span class="sp"></span><button class="btn primary" id="pmOk">확인</button>',
+    onMount: (m) => {
+      const ok = () => { const v = $("#pmVal", m).value.trim(); closeModal(); onOk(v); };
+      $("#pmOk", m).addEventListener("click", ok);
+      $("#pmVal", m).addEventListener("keydown", (e) => { if (e.key === "Enter") ok(); });
+    }
+  });
+}
+
+/* ------------------------------ 자산 폼 ------------------------------ */
+function openAssetForm(id, presetFloorId) {
+  if (!requireAdmin()) return;
+  const a = id ? (S.data.assets || []).find((x) => x.id === id) : null;
+  const fl = (S.data.sites || []).length ? allFloors() : [];
+  if (!fl.length) { toast("warn", "층을 먼저 등록하세요", "관리자 모드 → 사업장 · 층 탭에서 사업장/건물/층을 등록해야 자산을 등록할 수 있습니다."); return; }
+  const defFloor = (a && a.floorId) || presetFloorId || (S.fp.floorId && floorRef(S.fp.floorId) ? S.fp.floorId : fl[0].floor.id);
+  const cur = a || {};
+  const st = { photo: cur.photo ? Object.assign({}, cur.photo) : null, uploading: false };
+
+  const typeOpts = (S.data.assetTypes || []).map((t) => '<option value="' + t.id + '"' + (cur.typeId === t.id ? " selected" : "") + ">" + esc(t.name) + "</option>").join("");
+  const body =
+    '<fieldset class="fset"><legend>제품 사진</legend>' +
+      '<div class="photo-drop" id="pdrop">' +
+        '<div class="photo-prev" id="pprev">' + (st.photo && st.photo.dataUrl ? '<img src="' + st.photo.dataUrl + '" alt="제품 사진 미리보기" />' : '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 16 5-5 4 4 3-3 6 6"/><circle cx="8.5" cy="9" r="1.3"/></svg>') + "</div>" +
+        '<div class="photo-acts">' +
+          '<div class="row"><button type="button" class="btn primary sm" id="pPick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 16.5V7.5M12 7.5 8.6 11M12 7.5 15.4 11"/><path d="M4.5 15.5V18a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5v-2.5"/></svg>파일 선택</button>' +
+          '<button type="button" class="btn brass sm" id="pCam"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 8.5h3.2l1.4-2h8.8l1.4 2H21v10H3z"/><circle cx="12" cy="13" r="3.2"/></svg>카메라 촬영</button>' +
+          (st.photo ? '<button type="button" class="btn danger sm" id="pDel">사진 삭제</button>' : "") + "</div>" +
+          '<span class="hint">이미지 파일(JPG·PNG·HEIC) 또는 휴대폰 촬영으로 바로 등록할 수 있습니다. 앱 표시용 썸네일(최대 1280px)이 저장되고, 드라이브 연결 시 원본이 사진 폴더에 함께 업로드됩니다.</span>' +
+        "</div>" +
+        '<input type="file" accept="image/*" id="pFile" class="sr" />' +
+        '<input type="file" accept="image/*" capture="environment" id="pPhoto" class="sr" />' +
+      "</div>" +
+    "</fieldset>" +
+
+    '<div class="grid2">' +
+      '<div class="field"><label>제품명 <span class="req">*</span></label><input class="inp" id="aName" value="' + esc(cur.name || "") + '" placeholder="예) 노트북 16인치" /></div>' +
+      '<div class="field"><label>자산의 종류 <span class="req">*</span></label><select class="inp" id="aType">' + typeOpts + '<option value="__new">+ 새 종류 만들기…</option></select></div>' +
+    "</div>" +
+
+    '<fieldset class="fset"><legend>금액</legend>' +
+      '<div class="grid3">' +
+        '<div class="field"><label>제품가격 (단가)</label><input class="inp num" id="aPrice" inputmode="numeric" value="' + (cur.price != null ? cur.price : "") + '" placeholder="0" /><span class="hint">단위 원</span></div>' +
+        '<div class="field"><label>수량</label><input class="inp num" id="aQty" inputmode="numeric" value="' + (cur.quantity != null ? cur.quantity : 1) + '" placeholder="1" /><span class="hint">동일 자산 개수</span></div>' +
+        '<div class="field"><label>구입금액 (취득원가)</label><input class="inp num" id="aCost" inputmode="numeric" value="' + (cur.purchaseAmount != null ? cur.purchaseAmount : "") + '" placeholder="0" /><span class="hint">총 구입 금액 · 미입력 시 제품가격 × 수량</span></div>' +
+      "</div>" +
+      '<div class="grid2" style="margin-top:12px">' +
+        '<div class="field"><label>감가금액 (감가상각누계)</label><input class="inp num" id="aDep" inputmode="numeric" value="' + (cur.depreciationAmount != null ? cur.depreciationAmount : "") + '" placeholder="0" /><span class="hint">장부가액 = 구입금액 − 감가금액</span></div>' +
+        '<div class="field"><label>구입일</label><input class="inp" id="aDate" type="date" value="' + esc(cur.purchaseDate || todayISO()) + '" /></div>' +
+      "</div>" +
+    "</fieldset>" +
+
+    '<div class="grid2">' +
+      '<div class="field"><label>구입업체</label><input class="inp" id="aVendor" value="' + esc(cur.vendor || "") + '" placeholder="예) OO전자" /></div>' +
+      '<div class="field"><label>상태</label><select class="inp" id="aStatus">' + ["사용중", "보관", "수리", "처분", "폐기"].map((s) => '<option' + ((cur.status || "사용중") === s ? " selected" : "") + ">" + s + "</option>").join("") + "</select></div>" +
+    "</div>" +
+    '<div class="grid2">' +
+      '<div class="field"><label>관리번호</label><input class="inp" id="aCode" value="' + esc(cur.code || "") + '" placeholder="예) HQ-IT-001" /></div>' +
+      '<div class="field"><label>위치 (층) <span class="req">*</span></label><select class="inp" id="aFloor">' + floorOptions(defFloor, S.filters.site) + "</select></div>" +
+    "</div>" +
+
+    '<div class="field"><label>기타</label><textarea class="inp" id="aNote" placeholder="규격 · 시리얼 · 비고 등 자유 기재">' + esc(cur.note || "") + "</textarea></div>" +
+    '<input type="hidden" id="aPos" value="' + (cur.pos ? cur.pos.x + "," + cur.pos.y : "") + '" />' +
+    '<div id="aPreview" style="font-size:12px;color:var(--muted);background:#F3F6F8;border:1px solid var(--line-soft);border-radius:4px;padding:10px 12px">장부가액 <b id="aBook" style="color:var(--teal)">0원</b> · 취득원가 <span id="aCostV">0원</span></div>';
+
+  const foot =
+    '<button class="btn" data-close="1">취소</button>' +
+    '<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-2);margin-left:12px"><input type="checkbox" id="aPlace"' + (cur.pos ? "" : " checked") + ' /> 저장 후 도면에서 위치 지정</label>' +
+    '<span class="sp"></span>' +
+    (a ? '<button class="btn danger" data-del-asset="' + a.id + '">삭제</button>' : "") +
+    '<button class="btn primary" id="aSave">' + (a ? "변경사항 저장" : "자산 등록") + "</button>";
+
+  openModal({ title: a ? "자산 수정" : "신규 자산 등록", sub: a ? (a.code || a.id) : "ASSET / NEW", size: "wide", body: body, foot: foot, onMount: mount });
+
+  function recalc() {
+    const price = num($("#aPrice").value), qty = num($("#aQty").value) || 1;
+    const cost = num($("#aCost").value) || price * qty;
+    const dep = num($("#aDep").value);
+    const book = cost - dep;
+    $("#aBook").textContent = fmtWon(book);
+    $("#aCostV").textContent = fmtWon(cost);
+  }
+  function setPhoto(p) {
+    st.photo = p;
+    const prev = $("#pprev");
+    prev.innerHTML = p && p.dataUrl ? '<img src="' + p.dataUrl + '" alt="제품 사진 미리보기" />' : "";
+    const acts = $(".photo-acts .row");
+    if (p && !$("#pDel")) {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "btn danger sm"; b.id = "pDel"; b.textContent = "사진 삭제";
+      b.addEventListener("click", () => setPhoto(null));
+      acts.appendChild(b);
+    } else if (!p && $("#pDel")) $("#pDel").remove();
+  }
+  async function handleFile(file) {
+    if (!file) return;
+    if (!/^image\//.test(file.type) && !/\.(jpe?g|png|webp|heic|heif)$/i.test(file.name)) { toast("err", "이미지 파일이 아닙니다", "JPG · PNG · WEBP 이미지를 선택해 주세요."); return; }
+    try {
+      const c = await compressImage(file, 960, 0.68);
+      let photo = { dataUrl: c.dataUrl, name: file.name, size: file.size, w: c.w, h: c.h };
+      if (S.data.settings.uploadOriginals && Drive.ready() && Drive.connected()) {
+        try {
+          const up = await Drive.uploadPhoto(c.raw.indexOf("data:image/jpeg") === 0 ? c.dataUrl : c.raw, "asset_" + Date.now() + "_" + (file.name || "photo.jpg"));
+          photo.driveId = up.id; photo.driveLink = up.webViewLink || "";
+          toast("ok", "원본 사진 업로드 완료", "Google Drive 사진 폴더에 원본을 저장했습니다.");
+        } catch (e) { toast("warn", "원본 업로드 실패", e.message + " (썸네일은 앱에 저장됩니다)"); }
+      }
+      setPhoto(photo);
+      toast("ok", "사진 준비 완료", "저장하면 자산에 함께 등록됩니다.");
+    } catch (e) { toast("err", "사진 처리 실패", e.message); }
+  }
+  function mount(m) {
+    $("#pFile", m).addEventListener("change", (e) => { handleFile(e.target.files[0]); e.target.value = ""; });
+    $("#pPhoto", m).addEventListener("change", (e) => { handleFile(e.target.files[0]); e.target.value = ""; });
+    const pp = $("#pPick", m), pc = $("#pCam", m);
+    if (pp) pp.addEventListener("click", () => $("#pFile", m).click());
+    if (pc) pc.addEventListener("click", () => $("#pPhoto", m).click());
+    if ($("#pDel", m)) $("#pDel", m).addEventListener("click", () => setPhoto(null));
+    ["aPrice", "aQty", "aCost", "aDep"].forEach((id) => { const el = $("#" + id, m); if (el) el.addEventListener("input", recalc); });
+    const drop = $("#pdrop", m);
+    ["dragenter", "dragover"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add("over"); }));
+    ["dragleave", "drop"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove("over"); }));
+    drop.addEventListener("drop", (e) => { const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]; if (f) handleFile(f); });
+    $("#aType", m).addEventListener("change", (e) => {
+      if (e.target.value === "__new") {
+        e.target.value = cur.typeId || (S.data.assetTypes[0] || {}).id || "";
+        openTypeForm(null);
+      }
+    });
+    recalc();
+    $("#aSave", m).addEventListener("click", save);
+  }
+  function save() {
+    const name = $("#aName").value.trim();
+    if (!name) { toast("err", "제품명을 입력하세요", "제품명은 필수 항목입니다."); $("#aName").focus(); return; }
+    const floorId = $("#aFloor").value;
+    const fr = floorRef(floorId);
+    if (!fr) { toast("err", "위치(층)를 선택하세요", "자산이 속할 사업장 건물의 층을 지정해야 합니다."); return; }
+    const posRaw = $("#aPos").value;
+    const pos = posRaw ? { x: Number(posRaw.split(",")[0]), y: Number(posRaw.split(",")[1]) } : null;
+    const rec = {
+      id: (a && a.id) || uid("as"),
+      siteId: fr.site.id, buildingId: fr.building.id, floorId: fr.floor.id,
+      name: name,
+      typeId: $("#aType").value,
+      photo: st.photo || null,
+      price: num($("#aPrice").value),
+      quantity: num($("#aQty").value) || 1,
+      purchaseAmount: num($("#aCost").value),
+      depreciationAmount: num($("#aDep").value),
+      vendor: $("#aVendor").value.trim(),
+      purchaseDate: $("#aDate").value,
+      status: $("#aStatus").value,
+      code: $("#aCode").value.trim(),
+      note: $("#aNote").value.trim(),
+      pos: pos,
+      createdAt: (a && a.createdAt) || nowISO(),
+      updatedAt: nowISO()
+    };
+    if (a) Object.assign(a, rec); else S.data.assets.push(rec);
+    persist();
+    const wantPlace = $("#aPlace") && $("#aPlace").checked;
+    closeModal();
+    toast("ok", a ? "자산을 수정했습니다" : "자산을 등록했습니다", rec.name + " · " + fr.site.name + " " + fr.floor.name + (wantPlace && !pos ? " — 도면에서 위치를 지정하세요." : ""));
+    if (wantPlace && !pos) { S.fp.floorId = rec.floorId; S.fp.sel = rec.id; S.fp.placing = rec.id; S.route = "floorplan"; }
+    else { S.fp.sel = rec.id; S.fp.floorId = rec.floorId; }
+    render();
+  }
+}
+
+/* 자산 상세(전체 정보) 모달 */
+function openAssetDetail(id) {
+  const a = (S.data.assets || []).find((x) => x.id === id); if (!a) return;
+  const r = floorRef(a.floorId);
+  const ph = a.photo && a.photo.dataUrl;
+  const row = (k, v) => '<div style="display:grid;grid-template-columns:104px 1fr;gap:0;border-bottom:1px solid var(--line-soft)"><div style="padding:8px 0;color:var(--muted);font-size:12px">' + esc(k) + '</div><div style="padding:8px 0;font-size:13px;font-variant-numeric:tabular-nums">' + v + "</div></div>";
+  openModal({
+    title: a.name, sub: a.code || "ASSET", size: "",
+    body: (ph ? '<img src="' + ph + '" alt="' + esc(a.name) + ' 제품 사진" style="width:100%;max-height:320px;object-fit:contain;background:#EDF1F5;border-radius:6px;border:1px solid var(--line-soft)" />' : "") +
+      '<div>' + row("자산 종류", typePill(a.typeId) + " " + statusPill(a.status)) + row("위치", esc(r ? r.site.name + " · " + r.building.name + " · " + r.floor.name : "—")) +
+      row("제품가격", fmtWon(a.price)) + row("수량", fmtNum(assetQty(a)) + " 점") + row("구입업체", esc(a.vendor || "—")) +
+      row("구입금액", "<b>" + fmtWon(assetCost(a)) + "</b>") + row("감가금액", '<span style="color:var(--rust)">− ' + fmtWon(a.depreciationAmount) + "</span>") +
+      row("장부가액", '<b style="color:var(--teal)">' + fmtWon(assetBook(a)) + "</b>") + row("구입일", fmtDate(a.purchaseDate)) +
+      row("도면 좌표", a.pos ? (a.pos.x * 100).toFixed(1) + "% / " + (a.pos.y * 100).toFixed(1) + "%" : "미배치") +
+      row("등록일", fmtDateTime(a.createdAt)) + row("수정일", fmtDateTime(a.updatedAt)) +
+      row("기타", a.note ? esc(a.note).replace(/\n/g, "<br>") : "—") +
+      (a.photo && a.photo.driveLink ? row("원본 사진", '<a href="' + a.photo.driveLink + '" target="_blank" rel="noopener" style="color:var(--ink-2);text-decoration:underline">Google Drive에서 열기</a>') : "") +
+      "</div>",
+    foot: '<button class="btn" data-close="1">닫기</button><span class="sp"></span>' +
+      (r && r.floor.plan && r.floor.plan.dataUrl ? '<button class="btn" data-goto-floor="' + a.floorId + '" data-focus="' + a.id + '">도면에서 보기</button>' : "") +
+      (S.admin ? '<button class="btn primary" data-edit-asset="' + a.id + '">수정</button><button class="btn danger" data-del-asset="' + a.id + '">삭제</button>' : "")
+  });
+}
+function deleteAsset(id) {
+  if (!requireAdmin()) return;
+  const a = (S.data.assets || []).find((x) => x.id === id); if (!a) return;
+  confirmModal("자산을 삭제할까요?", "<b>" + esc(a.name) + "</b> 자산을 등록부에서 삭제합니다. 이 작업은 되돌릴 수 없습니다.<br /><span style='color:var(--muted);font-size:12px'>저장 후에는 Google Drive의 데이터 파일에도 반영됩니다.</span>", () => {
+    S.data.assets = S.data.assets.filter((x) => x.id !== id);
+    if (S.fp.sel === id) S.fp.sel = null;
+    persist(); render();
+    toast("ok", "삭제했습니다", a.name + " 자산을 등록부에서 제거했습니다.");
+  });
+}
+
+/* ------------------------------ 종류 관리 ------------------------------ */
+function openTypeForm(id) {
+  if (!requireAdmin()) return;
+  const t = id ? (S.data.assetTypes || []).find((x) => x.id === id) : null;
+  const cur = t || { name: "", color: "#B8862B", note: "" };
+  openModal({
+    title: t ? "자산 종류 수정" : "자산 종류 등록", size: "narrow",
+    body: '<div class="field"><label>종류명 <span class="req">*</span></label><input class="inp" id="tpName" value="' + esc(cur.name) + '" placeholder="예) IT장비" /></div>' +
+      '<div class="field"><label>식별 색상</label><div style="display:flex;gap:8px;align-items:center"><input type="color" id="tpColor" value="' + esc(cur.color) + '" style="width:46px;height:36px;border:1px solid var(--line-strong);border-radius:4px;background:#fff;padding:2px" /><input class="inp num" id="tpColorTxt" value="' + esc(cur.color) + '" style="max-width:120px" /></div><span class="hint">도면 마커와 대시보드 범례에 사용됩니다.</span></div>' +
+      '<div class="field"><label>설명</label><input class="inp" id="tpNote" value="' + esc(cur.note || "") + '" /></div>',
+    foot: '<button class="btn" data-close="1">취소</button><span class="sp"></span>' + (t ? '<button class="btn danger" id="tpDel">삭제</button>' : "") + '<button class="btn primary" id="tpSave">저장</button>',
+    onMount: (m) => {
+      $("#tpColor", m).addEventListener("input", (e) => { $("#tpColorTxt", m).value = e.target.value; });
+      $("#tpColorTxt", m).addEventListener("input", (e) => { if (/^#?[0-9a-f]{6}$/i.test(e.target.value.trim())) $("#tpColor", m).value = e.target.value.trim().indexOf("#") === 0 ? e.target.value.trim() : "#" + e.target.value.trim(); });
+      $("#tpSave", m).addEventListener("click", () => {
+        const name = $("#tpName", m).value.trim();
+        if (!name) { toast("err", "종류명을 입력하세요", ""); return; }
+        let color = $("#tpColorTxt", m).value.trim(); if (color && color[0] !== "#") color = "#" + color;
+        if (!/^#[0-9a-f]{6}$/i.test(color)) color = "#B8862B";
+        if (t) Object.assign(t, { name: name, color: color, note: $("#tpNote", m).value.trim() });
+        else S.data.assetTypes.push({ id: uid("t"), name: name, color: color, note: $("#tpNote", m).value.trim() });
+        persist(); closeModal(); render();
+        toast("ok", t ? "종류를 수정했습니다" : "종류를 등록했습니다", name);
+      });
+      if ($("#tpDel", m)) $("#tpDel", m).addEventListener("click", () => {
+        const used = (S.data.assets || []).filter((a) => a.typeId === t.id).length;
+        confirmModal("자산 종류를 삭제할까요?", used ? "이 종류를 사용하는 자산이 <b>" + used + "건</b> 있습니다. 삭제하면 해당 자산은 ‘미분류’로 표시됩니다." : "<b>" + esc(t.name) + "</b> 종류를 삭제합니다.", () => {
+          S.data.assetTypes = S.data.assetTypes.filter((x) => x.id !== t.id);
+          persist(); render(); toast("ok", "종류를 삭제했습니다", t.name);
+        }, "삭제");
+      });
+    }
+  });
+}
+
+/* ==========================================================================
+   관리자 모드
+   ========================================================================== */
+function requireAdmin() {
+  if (S.admin) return true;
+  toast("warn", "관리자 모드가 꺼져 있습니다", "왼쪽 아래 ‘관리자 모드 켜기’ 버튼으로 전환하세요.");
+  return false;
+}
+function toggleAdmin(on) {
+  if (on === undefined) on = !S.admin;
+  if (on && !S.admin) {
+    openModal({
+      title: "관리자 모드", sub: "PIN", size: "narrow", locked: true,
+      body: '<p style="font-size:12.5px;color:var(--muted);line-height:1.6;margin-bottom:4px">등록·수정·삭제가 가능한 관리자 모드입니다. PIN을 입력하세요. (기본값 <b class="mono">0000</b> — 데이터·백업 탭에서 변경)</p>' +
+        '<div class="field"><label>PIN</label><input class="inp mono" id="pinVal" type="password" inputmode="numeric" maxlength="8" style="letter-spacing:.4em;text-align:center;font-size:18px" /></div>',
+      foot: '<button class="btn" data-close="1">취소</button><span class="sp"></span><button class="btn brass" id="pinOk">확인</button>',
+      onMount: (m) => {
+        const ok = () => {
+          if ($("#pinVal", m).value === S.pin) { closeModal(); setAdmin(true); toast("ok", "관리자 모드 ON", "이제 등록·수정·삭제가 가능합니다."); }
+          else { toast("err", "PIN이 일치하지 않습니다", "기본 PIN은 0000 입니다."); $("#pinVal", m).value = ""; $("#pinVal", m).focus(); }
+        };
+        $("#pinOk", m).addEventListener("click", ok);
+        $("#pinVal", m).addEventListener("keydown", (e) => { if (e.key === "Enter") ok(); });
+      }
+    });
+    return;
+  }
+  setAdmin(on);
+}
+function setAdmin(on) {
+  S.admin = on;
+  $("#navAdminState").textContent = on ? "ON" : "OFF";
+  $("#adminFabText").textContent = on ? "관리자 모드 끄기" : "관리자 모드 켜기";
+  $("#adminFab").classList.toggle("on", on);
+  render();
+}
+
+/* ------------------------------ 사업장 / 층 관리 ------------------------------ */
+function openSiteForm(id) {
+  if (!requireAdmin()) return;
+  const s = id ? findSite(id) : null;
+  const cur = s || { name: "", address: "", note: "" };
+  openModal({
+    title: s ? "사업장 수정" : "사업장 등록", size: "",
+    body: '<div class="field"><label>사업장명 <span class="req">*</span></label><input class="inp" id="stName" value="' + esc(cur.name) + '" placeholder="예) 본사 사업장" /></div>' +
+      '<div class="field"><label>주소</label><input class="inp" id="stAddr" value="' + esc(cur.address || "") + '" placeholder="예) 서울특별시 강남구 테헤란로 000" /></div>' +
+      '<div class="field"><label>비고</label><input class="inp" id="stNote" value="' + esc(cur.note || "") + '" /></div>',
+    foot: '<button class="btn" data-close="1">취소</button><span class="sp"></span>' + (s ? '<button class="btn danger" id="stDel">삭제</button>' : "") + '<button class="btn primary" id="stSave">저장</button>',
+    onMount: (m) => {
+      $("#stSave", m).addEventListener("click", () => {
+        const name = $("#stName", m).value.trim();
+        if (!name) { toast("err", "사업장명을 입력하세요", ""); return; }
+        if (s) Object.assign(s, { name: name, address: $("#stAddr", m).value.trim(), note: $("#stNote", m).value.trim() });
+        else S.data.sites.push({ id: uid("site"), name: name, address: $("#stAddr", m).value.trim(), note: $("#stNote", m).value.trim(), buildings: [] });
+        persist(); closeModal(); syncGlobalFilters(); render(); toast("ok", s ? "사업장을 수정했습니다" : "사업장을 등록했습니다", name);
+      });
+      if (s && $("#stDel", m)) $("#stDel", m).addEventListener("click", () => {
+        const n = (S.data.assets || []).filter((a) => a.siteId === s.id).length;
+        confirmModal("사업장을 삭제할까요?", "<b>" + esc(s.name) + "</b> 및 하위 건물·층" + (n ? "과 소속 자산 <b>" + n + "건</b>" : "") + "이 모두 삭제됩니다. 되돌릴 수 없습니다.", () => {
+          S.data.assets = S.data.assets.filter((a) => a.siteId !== s.id);
+          S.data.sites = S.data.sites.filter((x) => x.id !== s.id);
+          persist(); closeModal(); syncGlobalFilters(); render(); toast("ok", "사업장을 삭제했습니다", s.name);
+        }, "모두 삭제");
+      });
+    }
+  });
+}
+function openBuildingForm(siteId, id) {
+  if (!requireAdmin()) return;
+  const s = findSite(siteId); if (!s) return;
+  const b = id ? findBuilding(siteId, id) : null;
+  const cur = b || { name: "", note: "" };
+  openModal({
+    title: b ? "건물 수정" : "건물 등록", sub: s.name, size: "narrow",
+    body: '<div class="field"><label>건물명 <span class="req">*</span></label><input class="inp" id="bdName" value="' + esc(cur.name) + '" placeholder="예) 본관" /></div>' +
+      '<div class="field"><label>비고</label><input class="inp" id="bdNote" value="' + esc(cur.note || "") + '" placeholder="예) 지상 4층 / 1998년 준공" /></div>',
+    foot: '<button class="btn" data-close="1">취소</button><span class="sp"></span>' + (b ? '<button class="btn danger" id="bdDel">삭제</button>' : "") + '<button class="btn primary" id="bdSave">저장</button>',
+    onMount: (m) => {
+      $("#bdSave", m).addEventListener("click", () => {
+        const name = $("#bdName", m).value.trim();
+        if (!name) { toast("err", "건물명을 입력하세요", ""); return; }
+        if (b) Object.assign(b, { name: name, note: $("#bdNote", m).value.trim() });
+        else s.buildings.push({ id: uid("bld"), name: name, note: $("#bdNote", m).value.trim(), floors: [] });
+        persist(); closeModal(); render(); toast("ok", b ? "건물을 수정했습니다" : "건물을 등록했습니다", name);
+      });
+      if (b && $("#bdDel", m)) $("#bdDel", m).addEventListener("click", () => {
+        const ids = (b.floors || []).map((f) => f.id);
+        const n = (S.data.assets || []).filter((a) => ids.indexOf(a.floorId) >= 0).length;
+        confirmModal("건물을 삭제할까요?", "<b>" + esc(b.name) + "</b> 건물과 하위 층" + (n ? ", 소속 자산 <b>" + n + "건</b>" : "") + "이 삭제됩니다.", () => {
+          S.data.assets = S.data.assets.filter((a) => ids.indexOf(a.floorId) < 0);
+          s.buildings = s.buildings.filter((x) => x.id !== b.id);
+          persist(); closeModal(); render(); toast("ok", "건물을 삭제했습니다", b.name);
+        }, "모두 삭제");
+      });
+    }
+  });
+}
+function openFloorForm(siteId, buildingId, id) {
+  if (!requireAdmin()) return;
+  const b = findBuilding(siteId, buildingId); if (!b) return;
+  const fl = id ? findFloor(siteId, buildingId, id) : null;
+  const cur = fl || { name: "", level: 1, note: "" };
+  openModal({
+    title: fl ? "층 수정" : "층 등록", sub: findSite(siteId).name + " · " + b.name, size: "narrow",
+    body: '<div class="grid2"><div class="field"><label>층 이름 <span class="req">*</span></label><input class="inp" id="flName" value="' + esc(cur.name) + '" placeholder="예) 3층 / 지하1층" /></div>' +
+      '<div class="field"><label>층 번호</label><input class="inp num" id="flLevel" inputmode="numeric" value="' + esc(cur.level != null ? cur.level : 1) + '" placeholder="1" /><span class="hint">정렬용 (지하는 -1)</span></div></div>' +
+      '<div class="field"><label>비고</label><input class="inp" id="flNote" value="' + esc(cur.note || "") + '" placeholder="예) 창고·기계실" /></div>',
+    foot: '<button class="btn" data-close="1">취소</button><span class="sp"></span>' + (fl ? '<button class="btn danger" id="flDel">삭제</button>' : "") + '<button class="btn primary" id="flSave">저장</button>',
+    onMount: (m) => {
+      $("#flSave", m).addEventListener("click", () => {
+        const name = $("#flName", m).value.trim();
+        if (!name) { toast("err", "층 이름을 입력하세요", ""); return; }
+        if (fl) Object.assign(fl, { name: name, level: num($("#flLevel", m).value), note: $("#flNote", m).value.trim() });
+        else b.floors.push({ id: uid("fl"), name: name, level: num($("#flLevel", m).value), note: $("#flNote", m).value.trim(), plan: null });
+        b.floors.sort((x, y) => num(y.level) - num(x.level));
+        persist(); closeModal(); render(); toast("ok", fl ? "층을 수정했습니다" : "층을 등록했습니다", name);
+      });
+      if (fl && $("#flDel", m)) $("#flDel", m).addEventListener("click", () => {
+        const n = assetsInFloor(fl.id).length;
+        confirmModal("층을 삭제할까요?", "<b>" + esc(fl.name) + "</b> 층" + (n ? "과 소속 자산 <b>" + n + "건</b>" : "") + "이 삭제됩니다. 도면 정보도 함께 삭제됩니다.", () => {
+          S.data.assets = S.data.assets.filter((a) => a.floorId !== fl.id);
+          b.floors = b.floors.filter((x) => x.id !== fl.id);
+          if (S.fp.floorId === fl.id) S.fp.floorId = null;
+          persist(); closeModal(); render(); toast("ok", "층을 삭제했습니다", fl.name);
+        }, "모두 삭제");
+      });
+    }
+  });
+}
+
+/* ------------------------------ 도면 업로드 ------------------------------ */
+function uploadPlan(floorId) {
+  if (!requireAdmin()) return;
+  const r = floorRef(floorId); if (!r) return;
+  const input = document.createElement("input");
+  input.type = "file"; input.accept = "image/*";
+  input.addEventListener("change", async () => {
+    const f = input.files[0]; if (!f) return;
+    toast("warn", "도면 처리 중…", "이미지를 최적화하고 있습니다.");
+    try {
+      const c = await compressImage(f, 1600, 0.80);
+      let plan = { dataUrl: c.dataUrl, name: f.name, w: c.w, h: c.h, uploadedAt: nowISO() };
+      if (S.data.settings.uploadOriginals && Drive.ready() && Drive.connected()) {
+        try { const up = await Drive.uploadPhoto(c.dataUrl, "plan_" + r.floor.name + "_" + Date.now() + ".jpg"); plan.driveId = up.id; plan.driveLink = up.webViewLink || ""; } catch (e) {}
+      }
+      r.floor.plan = plan;
+      if (!S.fp.siteId) { S.fp.siteId = r.site.id; S.fp.buildingId = r.building.id; }
+      S.fp.floorId = r.floor.id;
+      persist(); render();
+      toast("ok", "도면을 등록했습니다", r.site.name + " " + r.building.name + " " + r.floor.name + " — 이제 자산 위치를 배치할 수 있습니다.");
+    } catch (e) { toast("err", "도면 업로드 실패", e.message); }
+  });
+  input.click();
+}
+
+/* ==========================================================================
+   관리자 화면 (탭)
+   ========================================================================== */
+function viewAdmin() {
+  const tabs = [["sites", "사업장 · 층"], ["assets", "자산"], ["types", "자산 종류"], ["settings", "설정"]];
+  const t = S.adminTab;
+  let inner = "";
+  if (!S.admin) {
+    inner = '<div class="card"><div class="card-b">' + emptyState("관리자 모드가 꺼져 있습니다", "관리자 모드에서 사업장 · 건물 · 층 · 자산을 등록/수정/삭제할 수 있습니다. 왼쪽 아래 버튼으로 켜세요 (기본 PIN 0000).",
+      '<button class="btn brass" data-act="admin-on">관리자 모드 켜기</button>') + "</div></div>";
+  } else if (t === "sites") inner = adminSites();
+  else if (t === "assets") inner = adminAssets();
+  else if (t === "types") inner = adminTypes();
+  else inner = adminSettings();
+
+  return titleBlock([
+    { k: "Manage", v: "관리자 모드", grow: true },
+    { k: "상태", html: S.admin ? '<span class="stamp">ADMIN ON</span>' : "OFF" },
+    { k: "사업장", v: (S.data.sites || []).length + "곳 · 층 " + allFloors().length },
+    { k: "자산", v: (S.data.assets || []).length + "건" },
+    { k: "저장", html: S.data.settings.lastDriveSave ? esc(relTime(S.data.settings.lastDriveSave)) : "로컬만" }
+  ]) + '<div class="wrap">' +
+    (S.admin ? '<div class="admin-banner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 3.5 4.5 6.8v6.1c0 4.3 3.1 7.2 7.5 8.6 4.4-1.4 7.5-4.3 7.5-8.6V6.8L12 3.5z"/></svg><span>관리자 모드가 켜져 있습니다 — 등록·수정·삭제 내용은 <b>자동으로 로컬에 저장</b>되고, Google Drive 연결 시 함께 동기화됩니다.</span></div>' : "") +
+    '<div class="tabs">' + tabs.map((x) => '<button class="tab' + (t === x[0] ? " on" : "") + '" data-admin-tab="' + x[0] + '">' + esc(x[1]) + '<span class="n">' +
+      (x[0] === "sites" ? (S.data.sites || []).length : x[0] === "assets" ? (S.data.assets || []).length : x[0] === "types" ? (S.data.assetTypes || []).length : "—") + "</span></button>").join("") + "</div>" +
+    inner + "</div>";
+}
+function adminSites() {
+  const sites = S.data.sites || [];
+  return '<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">' +
+      '<button class="btn primary" data-act="add-site"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>사업장 등록</button>' +
+      '<button class="btn" data-act="seed">샘플 데이터 불러오기</button>' +
+      '<span style="flex:1"></span>' +
+      '<span style="font-size:11.5px;color:var(--muted);align-self:center">사업장 → 건물 → 층 순서로 등록한 뒤, 각 층의 도면을 업로드하세요.</span>' +
+    "</div>" +
+    (sites.length ? sites.map((s) => {
+      const sum = summarize((S.data.assets || []).filter((a) => a.siteId === s.id));
+      return '<div class="card" style="margin-bottom:12px"><div class="card-h"><h3>' + esc(s.name) + "</h3>" +
+        '<span class="sp">자산 ' + sum.count + "건 · 장부 " + fmtShort(sum.book) + "원</span>" +
+        '<button class="btn xs" data-act="add-building" data-site="' + s.id + '">+ 건물</button>' +
+        '<button class="btn xs" data-edit-site="' + s.id + '">수정</button>' +
+        '<button class="btn xs danger" data-del-site="' + s.id + '">삭제</button></div>' +
+        '<div class="card-b tight">' +
+        (s.address ? '<div style="padding:9px 14px;font-size:11.5px;color:var(--muted);border-bottom:1px solid var(--line-soft)">' + esc(s.address) + (s.note ? " · " + esc(s.note) : "") + "</div>" : "") +
+        ((s.buildings || []).length ? (s.buildings || []).map((b) => {
+          const bsum = summarize((S.data.assets || []).filter((a) => a.buildingId === b.id));
+          return '<div style="border-bottom:1px solid var(--line-soft)">' +
+            '<div class="list-row" style="background:#FAFCFD"><div class="lr-main"><div class="lr-t">' +
+              '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 20V9l8-5 8 5v11"/><path d="M9 20v-6h6v6"/></svg>' + esc(b.name) +
+              (b.note ? ' <span style="font-weight:400;font-size:11.5px;color:var(--muted)">' + esc(b.note) + "</span>" : "") + "</div>" +
+              '<div class="lr-s"><span>층 ' + (b.floors || []).length + "개</span><span>자산 " + bsum.count + "건</span><span>장부 " + fmtShort(bsum.book) + "원</span></div></div>" +
+              '<div class="lr-a"><button class="btn xs" data-act="add-floor" data-site="' + s.id + '" data-building="' + b.id + '">+ 층</button>' +
+              '<button class="btn xs" data-edit-building="' + s.id + "|" + b.id + '">수정</button>' +
+              '<button class="btn xs danger" data-del-building="' + s.id + "|" + b.id + '">삭제</button></div></div>' +
+            ((b.floors || []).length ? b.floors.map((f) => {
+              const fs = summarize(assetsInFloor(f.id));
+              const hasPlan = !!(f.plan && f.plan.dataUrl);
+              return '<div class="list-row" style="padding-left:34px"><div class="lr-main"><div class="lr-t" style="font-size:12.5px">' + esc(f.name) +
+                (hasPlan ? '<span class="pill teal">도면 등록</span>' : '<span class="pill grey">도면 없음</span>') + "</div>" +
+                '<div class="lr-s"><span>자산 ' + fs.count + "건</span><span>수량 " + fmtNum(fs.qty) + "</span><span>자산수</span>" + (f.note ? "<span>" + esc(f.note) + "</span>" : "") + "</div></div>" +
+                '<div class="lr-a"><button class="btn xs" data-plan="' + f.id + '">도면 ' + (hasPlan ? "교체" : "업로드") + "</button>" +
+                '<button class="btn xs" data-goto-floor="' + f.id + '">배치</button>' +
+                '<button class="btn xs" data-edit-floor="' + s.id + "|" + b.id + "|" + f.id + '">수정</button>' +
+                '<button class="btn xs danger" data-del-floor="' + s.id + "|" + b.id + "|" + f.id + '">삭제</button></div></div>';
+            }).join("") : '<div class="list-row" style="padding-left:34px"><span style="font-size:12px;color:var(--muted)">등록된 층이 없습니다 — ‘+ 층’ 버튼으로 추가하세요.</span></div>') +
+            "</div>";
+        }).join("") : '<div style="padding:14px;font-size:12px;color:var(--muted)">건물이 없습니다 — ‘+ 건물’ 버튼으로 추가하세요.</div>') +
+        "</div></div>";
+    }).join("") : '<div class="card"><div class="card-b">' + emptyState("등록된 사업장이 없습니다", "‘사업장 등록’으로 시작하거나, 샘플 데이터를 불러와 구조를 확인하세요.", '<button class="btn primary" data-act="add-site">사업장 등록</button> <button class="btn brass" data-act="seed">샘플 데이터</button>') + "</div></div>");
+}
+function adminAssets() {
+  const list = sortedAssets((S.data.assets || []));
+  return '<div class="filters" style="margin-bottom:14px"><button class="btn primary" data-act="add-asset"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>신규 자산 등록</button>' +
+    '<span style="flex:1"></span><button class="btn" data-act="csv-list">CSV 내보내기</button><button class="btn danger" data-act="bulk-del">선택 삭제</button></div>' +
+    '<div class="card"><div class="card-b tight">' + (list.length ? list.map((a) => {
+      const r = floorRef(a.floorId);
+      return '<div class="list-row">' +
+        '<input type="checkbox" class="chkRow" value="' + a.id + '" />' +
+        (a.photo && a.photo.dataUrl ? '<img class="thumb" src="' + a.photo.dataUrl + '" alt="" />' : '<span class="thumb-ph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 16 5-5 4 4 3-3 6 6"/></svg></span>') +
+        '<div class="lr-main"><div class="lr-t">' + esc(a.name) + typePill(a.typeId) + (a.pos ? "" : '<span class="pill grey">도면 미배치</span>') + "</div>" +
+        '<div class="lr-s"><span>' + esc(r ? r.site.name + " · " + r.building.name + " · " + r.floor.name : "위치 미지정") + "</span><span>수량 " + fmtNum(assetQty(a)) + "</span><span>구입 " + fmtWon(assetCost(a)) + "</span><span>감가 " + fmtWon(a.depreciationAmount) + "</span><span>장부 " + fmtWon(assetBook(a)) + "</span></div></div>" +
+        '<div class="lr-a"><button class="btn xs" data-open-asset="' + a.id + '">보기</button><button class="btn xs" data-edit-asset="' + a.id + '">수정</button><button class="btn xs danger" data-del-asset="' + a.id + '">삭제</button></div></div>';
+    }).join("") : '<div style="padding:18px">' + emptyState("자산이 없습니다", "‘신규 자산 등록’으로 첫 자산을 등록하세요.", '<button class="btn primary" data-act="add-asset">신규 자산 등록</button>') + "</div>") + "</div></div>";
+}
+function adminTypes() {
+  return '<div style="margin-bottom:14px"><button class="btn primary" data-act="add-type"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>자산 종류 등록</button></div>' +
+    '<div class="card"><div class="card-b tight">' + (S.data.assetTypes || []).map((t) => {
+      const l = (S.data.assets || []).filter((a) => a.typeId === t.id);
+      const s = summarize(l);
+      return '<div class="list-row"><span class="chip-dot" style="background:' + t.color + ';width:14px;height:14px;border-radius:3px"></span>' +
+        '<div class="lr-main"><div class="lr-t">' + esc(t.name) + "</div><div class='lr-s'><span>" + esc(t.note || "설명 없음") + "</span><span>" + esc(t.color) + "</span></div></div>" +
+        '<div style="text-align:right;font-size:12px;color:var(--muted)"><b style="color:var(--text)">' + s.count + "</b>건 · " + fmtShort(s.book) + "원</div>" +
+        '<div class="lr-a"><button class="btn xs" data-edit-type="' + t.id + '">수정</button></div></div>';
+    }).join("") + "</div></div>";
+}
+function adminSettings() {
+  const st = S.data.settings;
+  return '<div class="grid2" style="align-items:start;gap:16px">' +
+    '<div class="card"><div class="card-h"><h3>Google Drive 연동</h3><span class="sp">' + esc(driveStatus().t) + '</span></div><div class="card-b" style="display:flex;flex-direction:column;gap:13px">' +
+      '<div class="field"><label>OAuth 2.0 클라이언트 ID (웹 애플리케이션)</label><input class="inp mono" id="cfgClient" style="font-size:11.5px" value="' + esc(st.clientId || "") + '" placeholder="000000000000-xxxxxxxx.apps.googleusercontent.com" /><span class="hint">Google Cloud Console → API 및 서비스 → 사용자 인증 정보 → OAuth 클라이언트 ID. 승인된 JavaScript 원본에 이 사이트 주소를 추가해야 합니다. README 참고.</span></div>' +
+      '<div class="field"><label>드라이브 폴더 이름</label><input class="inp" id="cfgFolder" value="' + esc(st.driveFolderName || "자산관리") + '" /></div>' +
+      '<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px">' +
+        '<label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="cfgAuto"' + (st.autoSync ? " checked" : "") + " /> 변경 시 자동 저장</label>" +
+        '<label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="cfgOriginals"' + (st.uploadOriginals ? " checked" : "") + " /> 사진 원본도 업로드</label>" +
+      "</div>" +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" data-act="cfg-save">설정 저장</button>' +
+        '<button class="btn" data-act="drive-connect">' + (Drive.connected() ? "다시 인증" : "드라이브 연결") + "</button>" +
+        '<button class="btn brass" data-act="drive-save">지금 저장</button>' +
+        '<button class="btn" data-act="drive-load">드라이브에서 불러오기</button></div>' +
+      '<div style="font-size:11.5px;color:var(--muted);line-height:1.6;border-top:1px solid var(--line-soft);padding-top:12px">' +
+        "드라이브에는 <b>" + esc(st.driveFolderName || "자산관리") + "</b> 폴더를 만들고 <span class='mono'>" + DATA_FILENAME + "</span> 파일에 전체 데이터를 저장합니다. " +
+        "사진 원본은 그 안의 <span class='mono'>photos</span> 폴더에 올라갑니다. 접근 범위는 <span class='mono'>drive.file</span> — <b>이 앱이 만든 파일만</b> 읽고 쓸 수 있습니다." +
+      "</div>" +
+      (st.lastDriveSave ? '<div style="font-size:11.5px;color:var(--muted)">최근 저장: ' + esc(fmtDateTime(st.lastDriveSave)) + "</div>" : "") +
+      (st.driveFolderId ? '<div style="font-size:11px;color:var(--muted)"><a target="_blank" rel="noopener" style="text-decoration:underline" href="https://drive.google.com/drive/folders/' + esc(st.driveFolderId) + '">드라이브 폴더 열기</a></div>' : "") +
+    "</div></div>" +
+
+    '<div style="display:flex;flex-direction:column;gap:16px">' +
+      '<div class="card"><div class="card-h"><h3>백업 · 복원</h3><span class="sp">JSON</span></div><div class="card-b" style="display:flex;flex-direction:column;gap:12px">' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" data-act="export-json">백업 파일 내려받기</button><button class="btn" data-act="import-json">백업 파일 불러오기</button></div>' +
+        '<span class="hint">백업 파일에는 사진 썸네일이 함께 들어갑니다. 드라이브 없이도 다른 PC로 옮길 수 있습니다.</span>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--line-soft);padding-top:12px"><button class="btn danger" data-act="wipe">전체 데이터 초기화</button><button class="btn" data-act="seed">샘플 데이터 불러오기</button></div>' +
+      "</div></div>" +
+      '<div class="card"><div class="card-h"><h3>관리자 PIN · 표시</h3></div><div class="card-b" style="display:flex;flex-direction:column;gap:12px">' +
+        '<div class="field"><label>회사명 (표제란 표시)</label><input class="inp" id="cfgCompany" value="' + esc(st.company || "") + '" placeholder="예) 샘플 주식회사" /></div>' +
+        '<div class="field"><label>관리자 PIN 변경</label><div style="display:flex;gap:8px"><input class="inp mono" id="cfgPin" type="text" inputmode="numeric" maxlength="8" value="' + esc(S.pin) + '" style="max-width:140px;letter-spacing:.3em;text-align:center" /><button class="btn" data-act="pin-save">변경</button></div><span class="hint">이 PIN은 이 브라우저에만 저장되는 간단한 잠금입니다(실제 보안 장치가 아닙니다).</span></div>' +
+      "</div></div>" +
+    "</div></div>";
+}
+
+/* ==========================================================================
+   PART 5 — 라우팅 · 이벤트 · 초기화
+   ========================================================================== */
+
+/* ------------------------------ 라우팅 ------------------------------ */
+const ROUTES = { dashboard: "대시보드", floorplan: "도면 배치", assets: "자산 목록", admin: "관리자 모드", data: "데이터 · 백업" };
+function go(route) {
+  if (!ROUTES[route]) route = "dashboard";
+  S.route = route;
+  try { location.hash = "#/" + route; } catch (e) {}
+  render();
+  const v = $("#view"); if (v) v.scrollTop = 0;
+}
+function render() {
+  if (!S.data) return;
+  const v = $("#view"); if (!v) return;
+  $$("#nav .nav-item").forEach((b) => b.classList.toggle("on", b.dataset.route === S.route));
+  $("#navAssetCount").textContent = (S.data.assets || []).length;
+  const st = S.data.settings;
+  let crumb = (st.company ? '<b>' + esc(st.company) + "</b><span class='sep'>/</span>" : "") + "<b>" + esc(ROUTES[S.route] || "") + "</b>";
+  if (S.filters.site) crumb += "<span class='sep'>·</span>" + esc((findSite(S.filters.site) || {}).name || "");
+  if (S.filters.q) crumb += "<span class='sep'>·</span>‘" + esc(S.filters.q) + "’";
+  $("#crumb").innerHTML = crumb;
+  let html = "";
+  if (S.route === "dashboard") html = viewDashboard();
+  else if (S.route === "floorplan") html = viewFloorplan();
+  else if (S.route === "assets") html = viewAssets();
+  else if (S.route === "admin") html = viewAdmin();
+  else if (S.route === "data") html = viewData();
+  v.innerHTML = html;
+  updateDrivePill();
+  $("#btnAddAsset").style.display = S.route === "admin" && S.adminTab === "assets" ? "none" : "";
+}
+function viewData() {
+  const st = S.data.settings;
+  const bytes = (() => { try { return new Blob([JSON.stringify(S.data)]).size; } catch (e) { return 0; } })();
+  const photos = (S.data.assets || []).filter((a) => a.photo && a.photo.dataUrl).length;
+  const kb = (n) => n < 1024 ? n + " B" : n < 1048576 ? (n / 1024).toFixed(1) + " KB" : (n / 1048576).toFixed(2) + " MB";
+  return titleBlock([
+    { k: "Data", v: "데이터 · 백업", grow: true },
+    { k: "저장 위치", v: Drive.connected() ? "Google Drive + 로컬" : "로컬 브라우저" },
+    { k: "데이터 크기", v: kb(bytes) },
+    { k: "사진", v: photos + "건" },
+    { k: "버전", v: "v" + APP_VERSION }
+  ]) + '<div class="wrap">' +
+    '<div class="grid2" style="align-items:start;gap:16px">' +
+      '<div class="card"><div class="card-h"><h3>Google Drive</h3><span class="sp">' + esc(driveStatus().t) + '</span></div><div class="card-b" style="display:flex;flex-direction:column;gap:12px">' +
+        '<div class="kv-mini"><span>폴더 <b>' + esc(st.driveFolderName || "자산관리") + "</b></span><span>마지막 저장 <b>" + esc(st.lastDriveSave ? fmtDateTime(st.lastDriveSave) : "없음") + "</b></span></div>" +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+          '<button class="btn primary" data-act="drive-connect">' + (Drive.connected() ? "다시 인증" : "드라이브 연결") + "</button>" +
+          '<button class="btn brass" data-act="drive-save">지금 저장</button>' +
+          '<button class="btn" data-act="drive-load">불러오기</button>' +
+          '<button class="btn" data-act="go-admin-settings">설정 열기</button>' +
+        "</div>" +
+        (Drive.ready() ? "" : '<div style="font-size:12px;color:var(--brass-deep);background:var(--brass-soft);border:1px solid #E5D2A8;border-radius:4px;padding:10px 12px;line-height:1.6">아직 OAuth 클라이언트 ID가 없습니다. <b>설정 열기</b>에서 입력하거나, <span class="mono">index.html</span> 상단 <span class="mono">DEFAULT_CLIENT_ID</span>에 넣어 두면 자동 적용됩니다. (README 참고)</div>') +
+        (bytes > 4 * 1048576 ? '<div style="font-size:12px;color:var(--brass-deep);background:var(--brass-soft);border:1px solid #E5D2A8;border-radius:4px;padding:10px 12px;line-height:1.6">브라우저 저장소 한도(약 5MB)에 가까워지고 있습니다. <b>드라이브에 저장</b>하고 <b>백업 파일을 내려받은</b> 뒤, 사용하지 않는 자산의 사진을 정리하세요.</div>' : "") +
+        '<div style="font-size:11.5px;color:var(--muted);line-height:1.7">데이터는 <span class="mono">' + DATA_FILENAME + "</span> 파일 하나에 담겨 사용자의 드라이브 폴더에 저장됩니다. 브라우저 로컬 저장소에도 항상 사본이 있어 인터넷이 없어도 조회·등록이 가능합니다.</div>" +
+      "</div></div>" +
+      '<div class="card"><div class="card-h"><h3>백업 파일 (JSON)</h3></div><div class="card-b" style="display:flex;flex-direction:column;gap:12px">' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" data-act="export-json">내려받기</button><button class="btn" data-act="import-json">불러오기</button></div>' +
+        '<div style="font-size:11.5px;color:var(--muted);line-height:1.7">내려받은 파일을 그대로 GitHub Pages 사이트나 다른 PC에서 불러오면 동일한 데이터로 시작할 수 있습니다. 사진 썸네일이 포함되어 파일 크기는 ' + kb(bytes) + " 정도입니다.</div>" +
+        '<div style="border-top:1px solid var(--line-soft);padding-top:12px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-act="csv-list">자산목록 CSV</button><button class="btn danger" data-act="wipe">전체 초기화</button></div>' +
+      "</div></div>" +
+    "</div>" +
+    '<div class="card" style="margin-top:16px"><div class="card-h"><h3>도면 등록 현황</h3><span class="sp">' + allFloors().filter((x) => x.floor.plan && x.floor.plan.dataUrl).length + " / " + allFloors().length + ' 층</span></div><div class="card-b tight">' +
+      (allFloors().length ? allFloors().map((x) => '<div class="list-row"><div class="lr-main"><div class="lr-t">' + esc(x.site.name + " · " + x.building.name + " · " + x.floor.name) + "</div>" +
+        '<div class="lr-s"><span>' + (x.floor.plan && x.floor.plan.dataUrl ? "도면 등록됨" + (x.floor.plan.uploadedAt ? " (" + fmtDate(x.floor.plan.uploadedAt) + ")" : "") : "도면 없음") + "</span><span>배치 자산 " + assetsInFloor(x.floor.id).filter((a) => a.pos).length + " / " + assetsInFloor(x.floor.id).length + "</span></div></div>" +
+        '<div class="lr-a"><button class="btn xs" data-plan="' + x.floor.id + '">' + (x.floor.plan && x.floor.plan.dataUrl ? "도면 교체" : "도면 업로드") + '</button><button class="btn xs" data-goto-floor="' + x.floor.id + '">배치 화면</button></div></div>').join("")
+        : '<div style="padding:18px">' + emptyState("등록된 층이 없습니다", "관리자 모드 → 사업장·층 탭에서 층을 등록하고 도면을 올리세요.", '<button class="btn primary" data-act="go-admin-sites">사업장 관리</button>') + "</div>") +
+    "</div></div></div>";
+}
+
+/* ------------------------------ 필터 동기화 ------------------------------ */
+function syncGlobalFilters() {
+  const sel = $("#siteFilter");
+  if (!sel) return;
+  sel.innerHTML = siteOptions(S.filters.site);
+  sel.value = S.filters.site || "";
+}
+function applyFiltersFromInputs() {
+  const q = $("#fQ"), fs = $("#fSite"), ft = $("#fType"), fst = $("#fStatus"), ff = $("#fFloor");
+  if (q) S.filters.q = q.value.trim();
+  if (fs) S.filters.site = fs.value;
+  if (ft) S.filters.type = ft.value;
+  if (fst) S.filters.status = fst.value;
+  if (ff) S.filters.floor = ff.value;
+}
+
+/* ------------------------------ 전역 이벤트 ------------------------------ */
+function bindGlobal() {
+  /* 내비게이션 */
+  $("#nav").addEventListener("click", (e) => {
+    const b = e.target.closest(".nav-item"); if (!b) return;
+    go(b.dataset.route);
+  });
+  $("#adminFab").addEventListener("click", () => toggleAdmin());
+  $("#drivePill").addEventListener("click", () => { go("data"); });
+  $("#btnSync").addEventListener("click", async () => {
+    if (!Drive.ready()) { toast("warn", "드라이브 설정이 필요합니다", "데이터 · 백업 화면에서 OAuth 클라이언트 ID를 입력하세요."); go("data"); return; }
+    try { await saveToDrive(false); } catch (e) {}
+  });
+  $("#btnAddAsset").addEventListener("click", () => openAssetForm(null));
+  $("#siteFilter").addEventListener("change", (e) => {
+    S.filters.site = e.target.value; S.filters.floor = ""; S.fp.floorId = null;
+    render();
+  });
+
+  /* 위임 클릭 */
+  document.addEventListener("click", onDelegateClick);
+  /* 드래그 배치 (도면) */
+  bindFloorDrag();
+  /* 검색/필터 입력 */
+  document.addEventListener("input", (e) => {
+    const t = e.target;
+    if (!t || !t.id) return;
+    if (t.id === "fQ") { clearTimeout(window.__fq); window.__fq = setTimeout(() => { S.filters.q = t.value.trim(); S.fp.sel = null; render(); const el = $("#fQ"); if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); } }, 260); }
+    if (t.id === "cfgPin" || t.id === "cfgClient") return;
+  });
+  document.addEventListener("change", (e) => {
+    const t = e.target;
+    if (!t || !t.id) return;
+    if (t.id === "fSite") { S.filters.site = t.value; S.filters.floor = ""; syncGlobalFilters(); render(); }
+    if (t.id === "fType") { S.filters.type = t.value; render(); }
+    if (t.id === "fStatus") { S.filters.status = t.value; render(); }
+    if (t.id === "fFloor") { S.filters.floor = t.value; render(); }
+    if (t.classList.contains("chkRow")) { const all = $("#chkAll"); if (all) all.checked = $$(".chkRow").every((c) => c.checked); }
+    if (t.id === "chkAll") $$(".chkRow").forEach((c) => { c.checked = t.checked; });
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") { if ($("#modalRoot").children.length) closeModal(); else if (S.fp.placing) { S.fp.placing = null; render(); } }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") { e.preventDefault(); if (Drive.ready()) saveToDrive(false).catch(() => {}); else toast("warn", "로컬 저장 모드", "브라우저에 자동 저장되었습니다. 드라이브 연결 시 함께 저장됩니다."); }
+  });
+  window.addEventListener("hashchange", () => {
+    const r = (location.hash || "").replace(/^#\/?/, "");
+    if (ROUTES[r] && r !== S.route) { S.route = r; render(); }
+  });
+  window.addEventListener("beforeunload", () => { try { persist({ silent: true }); } catch (e) {} });
+}
+
+function onDelegateClick(e) {
+  const closeEl = e.target.closest("[data-close]");
+  if (closeEl) { closeModal(); return; }
+  const act = e.target.closest("[data-act]");
+  const fp = e.target.closest("[data-fp]");
+  const mk = e.target.closest("[data-mk]");
+  const row = e.target.closest("[data-mk-row]");
+  const photo = e.target.closest("[data-open-photo]");
+
+  /* 자산 관련 */
+  const openEl = e.target.closest("[data-open-asset]");
+  if (openEl) { if (S.route === "floorplan") { S.fp.sel = openEl.dataset.openAsset; render(); } else openAssetDetail(openEl.dataset.openAsset); return; }
+  const editEl = e.target.closest("[data-edit-asset]");
+  if (editEl) { openAssetForm(editEl.dataset.editAsset); return; }
+  const delEl = e.target.closest("[data-del-asset]");
+  if (delEl) { deleteAsset(delEl.dataset.delAsset); return; }
+  const ph = e.target.closest("[data-open-photo]");
+  if (ph) { openAssetDetail(ph.dataset.openPhoto); return; }
+
+  /* 사업장/건물/층 */
+  const es = e.target.closest("[data-edit-site]"); if (es) { openSiteForm(es.dataset.editSite); return; }
+  const ds = e.target.closest("[data-del-site]"); if (ds) { const s = findSite(ds.dataset.delSite); confirmModal("사업장을 삭제할까요?", "<b>" + esc(s.name) + "</b> 및 하위 건물·층, 소속 자산이 모두 삭제됩니다.", () => { S.data.assets = S.data.assets.filter((a) => a.siteId !== s.id); S.data.sites = S.data.sites.filter((x) => x.id !== s.id); persist(); syncGlobalFilters(); render(); toast("ok", "삭제했습니다", s.name); }, "모두 삭제"); return; }
+  const eb = e.target.closest("[data-edit-building]"); if (eb) { const p = eb.dataset.editBuilding.split("|"); openBuildingForm(p[0], p[1]); return; }
+  const db = e.target.closest("[data-del-building]"); if (db) { const p = db.dataset.delBuilding.split("|"); const b = findBuilding(p[0], p[1]); const ids = (b.floors || []).map((f) => f.id); confirmModal("건물을 삭제할까요?", "<b>" + esc(b.name) + "</b> 건물과 하위 층, 소속 자산이 삭제됩니다.", () => { S.data.assets = S.data.assets.filter((a) => ids.indexOf(a.floorId) < 0); b.floors = []; const s = findSite(p[0]); s.buildings = s.buildings.filter((x) => x.id !== b.id); persist(); render(); toast("ok", "삭제했습니다", b.name); }, "모두 삭제"); return; }
+  const ef = e.target.closest("[data-edit-floor]"); if (ef) { const p = ef.dataset.editFloor.split("|"); openFloorForm(p[0], p[1], p[2]); return; }
+  const df = e.target.closest("[data-del-floor]"); if (df) { const p = df.dataset.delFloor.split("|"); const f = findFloor(p[0], p[1], p[2]); const n = assetsInFloor(f.id).length; confirmModal("층을 삭제할까요?", "<b>" + esc(f.name) + "</b> 층" + (n ? "과 소속 자산 " + n + "건" : "") + "이 삭제됩니다.", () => { S.data.assets = S.data.assets.filter((a) => a.floorId !== f.id); const b = findBuilding(p[0], p[1]); b.floors = b.floors.filter((x) => x.id !== f.id); if (S.fp.floorId === f.id) S.fp.floorId = null; persist(); render(); toast("ok", "삭제했습니다", f.name); }, "모두 삭제"); return; }
+  const et = e.target.closest("[data-edit-type]"); if (et) { openTypeForm(et.dataset.editType); return; }
+
+  /* 도면 이동 */
+  const gf = e.target.closest("[data-goto-floor]");
+  if (gf) {
+    const r = floorRef(gf.dataset.gotoFloor);
+    if (r) {
+      S.fp.siteId = r.site.id; S.fp.buildingId = r.building.id; S.fp.floorId = r.floor.id;
+      S.fp.sel = gf.dataset.focus || null; S.filters.floor = "";
+      if (S.filters.site && S.filters.site !== r.site.id) { S.filters.site = ""; syncGlobalFilters(); }
+      go("floorplan");
+    }
+    return;
+  }
+  const gs = e.target.closest("[data-goto-site]");
+  if (gs) { const fl = allFloors().filter((x) => x.site.id === gs.dataset.gotoSite); if (fl.length) { S.fp.siteId = fl[0].site.id; S.fp.buildingId = fl[0].building.id; S.fp.floorId = fl[0].floor.id; } go("floorplan"); return; }
+  const fs = e.target.closest("[data-filter-site]");
+  if (fs) { S.filters.site = fs.dataset.filterSite; S.filters.floor = ""; syncGlobalFilters(); go("assets"); return; }
+  const tr = e.target.closest("[data-tree-floor]");
+  if (tr) { const r = floorRef(tr.dataset.treeFloor); if (r) { S.fp.siteId = r.site.id; S.fp.buildingId = r.building.id; S.fp.floorId = r.floor.id; S.fp.sel = null; render(); } return; }
+  const ts = e.target.closest("[data-tree-site]");
+  if (ts) { const fl = allFloors().filter((x) => x.site.id === ts.dataset.treeSite); if (fl.length) { S.fp.siteId = fl[0].site.id; S.fp.buildingId = fl[0].building.id; S.fp.floorId = fl[0].floor.id; S.fp.sel = null; render(); } return; }
+
+  /* 마커 / 목록행 */
+  if (mk && !mk.dataset.drag) { S.fp.sel = mk.dataset.mk; render(); return; }
+  if (row) { S.fp.sel = row.dataset.mkRow; render(); const el = $('[data-mk="' + S.fp.sel + '"]'); if (el) el.scrollIntoView({ block: "nearest" }); return; }
+
+  /* 정렬 */
+  const so = e.target.closest("[data-sort]");
+  if (so) { const k = so.dataset.sort; if (S.sort.key === k) S.sort.dir *= -1; else { S.sort.key = k; S.sort.dir = k === "name" || k === "type" || k === "floor" || k === "vendor" ? 1 : -1; } render(); return; }
+
+  /* 자산종류 탭 */
+  const at = e.target.closest("[data-admin-tab]");
+  if (at) { S.adminTab = at.dataset.adminTab; go("admin"); return; }
+  const rj = e.target.closest("[data-route-jump]");
+  if (rj) { go(rj.dataset.routeJump); return; }
+
+  /* 도면 도구 */
+  if (fp) {
+    const a = fp.dataset.fp;
+    if (a === "zoom-in") { S.fp.zoom = clamp(S.fp.zoom * 1.25, 0.25, 6); render(); }
+    else if (a === "zoom-out") { S.fp.zoom = clamp(S.fp.zoom / 1.25, 0.25, 6); render(); }
+    else if (a === "zoom-reset") { S.fp.zoom = 1; render(); }
+    else if (a === "upload-plan") { uploadPlan(S.fp.floorId); }
+    else if (a === "cancel-place") { S.fp.placing = null; render(); }
+    return;
+  }
+  const pl = e.target.closest("[data-fp-place]");
+  if (pl) { if (!requireAdmin()) return; S.fp.placing = pl.dataset.fpPlace; S.fp.sel = pl.dataset.fpPlace; render(); toast("warn", "위치 지정 모드", "도면 위에서 자산을 놓을 지점을 클릭하세요."); return; }
+
+  /* 액션 */
+  if (act) {
+    const a = act.dataset.act;
+    switch (a) {
+      case "add-asset": openAssetForm(null, S.fp.floorId); break;
+      case "add-site": openSiteForm(null); break;
+      case "add-building": openBuildingForm(act.dataset.site, null); break;
+      case "add-floor": openFloorForm(act.dataset.site, act.dataset.building, null); break;
+      case "add-type": openTypeForm(null); break;
+      case "admin-on": toggleAdmin(true); break;
+      case "admin-gate": toggleAdmin(true); break;
+      case "admin-sites": S.adminTab = "sites"; go("admin"); break;
+      case "go-admin-sites": S.route = "admin"; S.adminTab = "sites"; render(); if (!S.admin) toggleAdmin(true); break;
+      case "go-admin-settings": S.adminTab = "settings"; go("admin"); if (!S.admin) toggleAdmin(true); break;
+      case "filter-reset": S.filters = { site: "", building: "", floor: "", type: "", q: "", status: "" }; syncGlobalFilters(); render(); break;
+      case "csv-list": exportCSV(sortedAssets(assetsFiltered())); break;
+      case "csv-bars": exportCSV(sortedAssets(assetsFiltered()), "자산집계_" + todayISO() + ".csv"); break;
+      case "bulk-del": {
+        if (!requireAdmin()) return;
+        const ids = $$(".chkRow").filter((c) => c.checked).map((c) => c.value);
+        if (!ids.length) { toast("warn", "선택된 자산이 없습니다", "목록 왼쪽의 체크박스를 선택하세요."); return; }
+        confirmModal("자산 " + ids.length + "건을 삭제할까요?", "선택한 자산이 등록부에서 삭제됩니다. 되돌릴 수 없습니다.", () => {
+          S.data.assets = S.data.assets.filter((a) => ids.indexOf(a.id) < 0);
+          persist(); render(); toast("ok", "삭제했습니다", ids.length + "건을 삭제했습니다.");
+        }, "삭제");
+        break;
+      }
+      case "print": window.print(); break;
+      case "seed": loadSample(); break;
+      case "export-json": download("자산관리_백업_" + todayISO() + ".json", JSON.stringify(S.data, null, 2)); toast("ok", "백업 파일을 만들었습니다", "사진 썸네일까지 포함된 JSON 파일입니다."); break;
+      case "import-json": importJSON(); break;
+      case "wipe": confirmModal("전체 데이터를 초기화할까요?", "사업장 · 층 · 자산 · 사진이 모두 삭제됩니다. 필요하면 먼저 <b>백업 파일 내려받기</b>를 실행하세요.", () => {
+        const keep = JSON.parse(JSON.stringify(S.data.settings));
+        S.data = emptyData(); S.data.settings = Object.assign(S.data.settings, keep);
+        persist(); syncGlobalFilters(); render(); toast("ok", "초기화했습니다", "빈 등록부로 시작합니다.");
+      }, "모두 삭제"); break;
+      case "cfg-save": {
+        S.data.settings.clientId = ($("#cfgClient") || {}).value ? $("#cfgClient").value.trim() : S.data.settings.clientId;
+        S.data.settings.driveFolderName = ($("#cfgFolder") || {}).value ? $("#cfgFolder").value.trim() : S.data.settings.driveFolderName;
+        S.data.settings.autoSync = $("#cfgAuto") ? $("#cfgAuto").checked : S.data.settings.autoSync;
+        S.data.settings.uploadOriginals = $("#cfgOriginals") ? $("#cfgOriginals").checked : S.data.settings.uploadOriginals;
+        if ($("#cfgCompany")) S.data.settings.company = $("#cfgCompany").value.trim();
+        if ($("#cfgPin")) savePin($("#cfgPin").value.trim() || "0000");
+        persist({ silent: true }); updateDrivePill(); render();
+        toast("ok", "설정을 저장했습니다", S.data.settings.clientId ? "이제 ‘드라이브 연결’을 눌러 인증하세요." : "OAuth 클라이언트 ID를 입력하면 드라이브를 쓸 수 있습니다.");
+        break;
+      }
+      case "pin-save": {
+        const v = ($("#cfgPin") || {}).value ? $("#cfgPin").value.trim() : "";
+        if (!v) { toast("err", "PIN을 입력하세요", ""); break; }
+        savePin(v); toast("ok", "PIN을 변경했습니다", "다음부터 새 PIN을 사용합니다."); break;
+      }
+      case "drive-connect": driveConnect(); break;
+      case "drive-save": if (!Drive.ready()) { toast("warn", "드라이브 설정이 필요합니다", "OAuth 클라이언트 ID를 먼저 입력하고 설정을 저장하세요."); break; } saveToDrive(false).catch(() => {}); break;
+      case "drive-load": driveLoad(); break;
+    }
+    return;
+  }
+}
+
+/* ------------------------------ 도면 마커 드래그 / 위치 지정 ------------------------------ */
+function bindFloorDrag() {
+  const doc = document;
+  doc.addEventListener("pointerdown", (e) => {
+    const canvas = e.target.closest("#fpCanvas");
+    if (!canvas) return;
+    const mk = e.target.closest("[data-mk]");
+
+    /* 위치 지정 모드: 클릭 지점을 좌표로 저장 */
+    if (S.fp.placing && !mk) {
+      const r = canvas.getBoundingClientRect();
+      const x = clamp((e.clientX - r.left) / r.width, 0, 1);
+      const y = clamp((e.clientY - r.top) / r.height, 0, 1);
+      const a = (S.data.assets || []).find((z) => z.id === S.fp.placing);
+      if (a) {
+        a.pos = { x: x, y: y }; a.updatedAt = nowISO();
+        S.fp.sel = a.id; S.fp.placing = null;
+        persist(); render();
+        toast("ok", "위치를 지정했습니다", a.name + " → " + (x * 100).toFixed(1) + "% / " + (y * 100).toFixed(1) + "%");
+      }
+      return;
+    }
+    if (!mk || !S.admin) return;
+    if (!canvas.querySelector("img")) return;
+    e.preventDefault();
+    const id = mk.dataset.mk;
+    const a = (S.data.assets || []).find((z) => z.id === id);
+    if (!a) return;
+    mk.classList.add("dragging");
+    const r = canvas.getBoundingClientRect();
+    const move = (ev) => {
+      const x = clamp((ev.clientX - r.left) / r.width, 0, 1);
+      const y = clamp((ev.clientY - r.top) / r.height, 0, 1);
+      a.pos = { x: x, y: y };
+      mk.style.left = (x * 100).toFixed(3) + "%";
+      mk.style.top = (y * 100).toFixed(3) + "%";
+    };
+    const up = () => {
+      document.removeEventListener("pointermove", move);
+      document.removeEventListener("pointerup", up);
+      mk.classList.remove("dragging");
+      if (a.pos) { a.updatedAt = nowISO(); S.fp.sel = a.id; persist(); }
+      render();
+    };
+    document.addEventListener("pointermove", move);
+    document.addEventListener("pointerup", up);
+  });
+}
+
+/* ------------------------------ Drive 동작 ------------------------------ */
+async function driveConnect() {
+  if (!S.data.settings.clientId) { toast("warn", "OAuth 클라이언트 ID가 필요합니다", "설정 화면에서 입력하고 ‘설정 저장’을 누른 뒤 다시 시도하세요."); S.adminTab = "settings"; if (S.route !== "admin" && S.route !== "data") go("admin"); return; }
+  try {
+    await Drive.connect(true);
+    toast("ok", "Google Drive 연결됨", "이제 ‘지금 저장’을 눌러 등록부를 드라이브에 올릴 수 있습니다.");
+    updateDrivePill();
+    /* 원격이 더 최신이면 안내 */
+    try {
+      const res = await Drive.loadData();
+      if (res && res.data && res.data.updatedAt) {
+        const remote = res.data.updatedAt, local = S.data.updatedAt;
+        if (new Date(remote).getTime() > new Date(local).getTime() + 2000) {
+          confirmModal("드라이브에 더 최신 데이터가 있습니다", "드라이브 사본 <b>" + esc(fmtDateTime(remote)) + "</b> / 이 브라우저 <b>" + esc(fmtDateTime(local)) + "</b>.<br />드라이브 데이터를 이 브라우저로 가져올까요?", async () => {
+            await loadFromDrive(true);
+            toast("ok", "드라이브 데이터를 불러왔습니다", "총 자산 " + (S.data.assets || []).length + "건");
+          }, "가져오기");
+          return;
+        }
+      }
+      saveToDrive(true).catch(() => {});
+    } catch (e) {}
+  } catch (e) {
+    S.drive.lastError = e.message; updateDrivePill();
+    toast("err", "드라이브 연결 실패", e.message);
+  }
+}
+async function driveLoad() {
+  if (!Drive.ready()) { toast("warn", "드라이브 설정이 필요합니다", "OAuth 클라이언트 ID를 먼저 입력하세요."); return; }
+  try {
+    if (!Drive.connected()) await Drive.connect(true);
+    const res = await Drive.loadData();
+    if (!res) return;
+    confirmModal("드라이브에서 불러올까요?", "드라이브의 등록부 <b>" + esc(fmtDateTime(res.data.updatedAt)) + "</b>로 현재 데이터를 덮어씁니다.<br /><span style='color:var(--muted);font-size:12px'>현재 브라우저 데이터는 사라집니다. 필요하면 먼저 백업하세요.</span>", async () => {
+      await loadFromDrive(true);
+      toast("ok", "불러왔습니다", "사업장 " + (S.data.sites || []).length + "곳 · 자산 " + (S.data.assets || []).length + "건");
+    }, "불러오기");
+  } catch (e) { toast("err", "불러오기 실패", e.message); }
+}
+function importJSON() {
+  const input = document.createElement("input");
+  input.type = "file"; input.accept = ".json,application/json";
+  input.addEventListener("change", async () => {
+    const f = input.files[0]; if (!f) return;
+    try {
+      const txt = await readFileText(f);
+      const j = JSON.parse(txt);
+      if (!j || !Array.isArray(j.assets) || !Array.isArray(j.sites)) throw new Error("자산관리 백업 파일 형식이 아닙니다.");
+      confirmModal("백업 파일을 불러올까요?", "<b>" + esc(f.name) + "</b> — 사업장 " + (j.sites || []).length + "곳 · 자산 " + (j.assets || []).length + "건.<br />현재 데이터를 덮어씁니다.", () => {
+        const keep = JSON.parse(JSON.stringify(S.data.settings));
+        S.data = migrate(j);
+        S.data.settings = Object.assign(S.data.settings, keep);
+        persist(); syncGlobalFilters(); render();
+        toast("ok", "백업을 불러왔습니다", "사업장 " + S.data.sites.length + "곳 · 자산 " + S.data.assets.length + "건");
+      }, "불러오기");
+    } catch (e) { toast("err", "파일을 읽을 수 없습니다", e.message); }
+  });
+  input.click();
+}
+function loadSample() {
+  const run = () => {
+    const s = sampleData();
+    const keep = JSON.parse(JSON.stringify(S.data.settings));
+    S.data = s; S.data.settings = Object.assign(S.data.settings, keep);
+    S.fp.siteId = "site_hq"; S.fp.buildingId = "bld_a"; S.fp.floorId = "fl_a1"; S.fp.sel = null;
+    S.filters = { site: "", building: "", floor: "", type: "", q: "", status: "" };
+    persist(); syncGlobalFilters(); render();
+    toast("ok", "샘플 데이터를 불러왔습니다", "사업장 2곳 · 층 6개 · 자산 11건 · 도면 6장이 등록되었습니다.");
+  };
+  if ((S.data.assets || []).length || (S.data.sites || []).length) {
+    confirmModal("샘플 데이터를 불러올까요?", "현재 데이터를 샘플 데이터로 <b>덮어씁니다</b>. 필요하면 먼저 백업하세요.", run, "덮어쓰기");
+  } else run();
+}
+
+/* ------------------------------ 시작 ------------------------------ */
+function boot() {
+  loadLocal();
+  syncGlobalFilters();
+  bindGlobal();
+  const r = (location.hash || "").replace(/^#\/?/, "");
+  S.route = ROUTES[r] ? r : "dashboard";
+  render();
+  if (/[?&]demo=1/.test(location.search) && !(S.data.sites || []).length && !(S.data.assets || []).length) {
+    const smp = sampleData();
+    const keepS = JSON.parse(JSON.stringify(S.data.settings));
+    S.data = smp; S.data.settings = Object.assign(S.data.settings, keepS);
+    S.fp.siteId = "site_hq"; S.fp.buildingId = "bld_a"; S.fp.floorId = "fl_a1";
+    try { localStorage.setItem(LS.data, JSON.stringify(S.data)); } catch (e) {}
+    syncGlobalFilters(); render();
+  }
+  if (!(S.data.sites || []).length && !(S.data.assets || []).length) {
+    setTimeout(() => {
+      if ((S.data.sites || []).length || (S.data.assets || []).length) return;
+      toast("warn", "등록된 데이터가 없습니다", "관리자 모드에서 사업장을 등록하거나, 대시보드의 ‘샘플 데이터 불러오기’로 구조를 먼저 확인해 보세요.");
+    }, 700);
+  }
+  if (S.data.settings.clientId) {
+    setTimeout(() => { updateDrivePill(); }, 200);
+  }
+}
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
+else boot();
+
+</script>
+</body>
+</html>
